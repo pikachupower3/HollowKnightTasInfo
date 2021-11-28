@@ -1,10 +1,10 @@
-﻿using System.Text;
+using System.Text;
 using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
     public static class RngInfo {
-        private static ulong rollTimes = 0;
-        private static Random.State lastState;
+        public static ulong rollTimes = 0;
+        public static Random.State lastState;
 
         public static void OnInit() {
             lastState = Random.state;

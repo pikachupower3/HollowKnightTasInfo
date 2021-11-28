@@ -86,6 +86,18 @@
         <ZipFile>$(SolutionDir)bin\HK_TAS_Info_Tool_v$(AssemblyVersion).zip</ZipFile>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='v1028|AnyCPU'">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='v1221|AnyCPU'">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='v1432|AnyCPU'">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <Delete Condition="Exists('$(OutputDir)')" Files="$(OutputDir)" />
         <Delete Condition="Exists('$(ZipFile)')" Files="$(ZipFile)" />
