@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Assembly_CSharp.TasInfo.mm.Source.Utils {
@@ -19,6 +19,15 @@ namespace Assembly_CSharp.TasInfo.mm.Source.Utils {
             }
 
             return stringBuilder.ToString();
+        }
+
+        public static float[] ParseFloats(string text) {
+            var split = text.Split(',');
+            var result = new float[split.Length];
+            for (int i = 0; i < split.Length; i++)
+                result[i] = float.Parse(split[i]);
+
+            return result;
         }
     }
 }

@@ -15,7 +15,7 @@ public class patch_GameManager : GameManager {
     public extern void orig_LeftScene(bool doAdditiveLoad);
 
     public new void LeftScene(bool doAdditiveLoad) {
-        RngSyncer.OnLeftScene();
+        RandomInjection.OnLeftScene();
         orig_LeftScene(doAdditiveLoad);
     }
 

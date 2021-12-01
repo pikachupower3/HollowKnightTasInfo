@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Assembly_CSharp.TasInfo.mm.Source;
 using Mono.Cecil;
 using Mono.Cecil.Cil;

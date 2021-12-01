@@ -4,7 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Assembly_CSharp.TasInfo.mm.Source;
+using GlobalEnums;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
 using MonoMod;
+using MonoMod.Utils;
 using UnityEngine;
 
 public class patch_HeroController : HeroController {

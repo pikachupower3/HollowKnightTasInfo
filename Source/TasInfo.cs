@@ -70,8 +70,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             HitboxInfo.OnInit();
             RngInfo.OnInit();
             SyncLogger.OnInit();
-            RngLogger.OnInit();
-            RngSyncer.OnInit();
+            RandomInjection.Init();
         }
 
         private static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {

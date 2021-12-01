@@ -21,7 +21,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private int _dataIndex;
         private int _estRealFrame;
         private string _lastScene;
-        private ulong _lastRollTimes;
 
         public static string LastScene => _instance?._lastScene ?? "";
 
@@ -92,7 +91,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             if (Input.GetKeyDown(KeyCode.Equals)) {
                 DumpLogFile();
-                RngLogger.DumpLogFile();
+                RandomInjection.DumpLogs();
             }
         }
 
@@ -125,18 +124,12 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 block[_dataIndex].velX = hero.current_velocity.x;
                 block[_dataIndex].velY = hero.current_velocity.y;
                 block[_dataIndex].rollTimes = RngInfo.rollTimes;
-                if (RngInfo.rollTimes != _lastRollTimes) {
-                    RngLogger.LogRngChange(RngState.CurrentState(), (int)(RngInfo.rollTimes - _lastRollTimes));
-                    _lastRollTimes = RngInfo.rollTimes;
-                }
 
                 var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
                 block[_dataIndex].scene = scene;
                 if (scene != _lastScene) {
                     _lastScene = scene;
-                    //RngSyncer.OnLeftScene();
-                    RngLogger.LogMessage($"### Scene: {scene}");
-                    //RngLogger.NotifySceneChanged(_lastScene);
+                    RandomInjection.NotifyBeginScene(scene);
                 }
 
                 uint keys = 0;
@@ -171,6 +164,46 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         writer.WriteLine($"{datum.realFrame},{datum.fixedFrame},{datum.realTime},{datum.fixedTime},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{datum.rollTimes},{datum.scene},{InKeys(datum.inKeys)},{datum.phEn},{datum.phEx},{datum.phSt}");
                     }
                 }
+            }
+
+            var diagPath = "./Diagnostics";
+            if (!Directory.Exists(diagPath))
+                Directory.CreateDirectory(diagPath);
+
+            int sceneIndex = 0;
+            int realFrameStart = 0;
+            int physFrameStart = 0;
+            StreamWriter currWriter = null;
+            try {
+                string lastScene = null;
+                for (int i = 0; i < _blocks.Count; i++) {
+                    int dataCount = i < _blocks.Count - 1 ? BlockSize : _dataIndex;
+                    for (int k = 0; k < dataCount; k++) {
+                        var datum = _blocks[i][k];
+                        if (string.IsNullOrEmpty(datum.scene))
+                            continue;
+
+                        if (currWriter == null || datum.scene != lastScene) {
+                            lastScene = datum.scene;
+                            currWriter?.Dispose();
+                            var file = File.Open($"{diagPath}/S{sceneIndex:00000}_{lastScene}_Diag.csv", FileMode.Create, FileAccess.Write);
+                            currWriter = new StreamWriter(file);
+                            currWriter.WriteLine("RelFrame,RelPhysFrame,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,InK");
+                            realFrameStart = datum.realFrame;
+                            physFrameStart = datum.fixedFrame;
+                            sceneIndex++;
+                        }
+
+                        var canInput = FlagChar(datum, DataFlags.CanInput, '1', '0');
+                        var wallSliding = FlagChar(datum, DataFlags.WallSliding, '1', '0');
+                        var dashing = FlagChar(datum, DataFlags.Dashing, '1', '0');
+                        var cDashing = FlagChar(datum, DataFlags.CDashing, '1', '0');
+                        var diving = FlagChar(datum, DataFlags.Diving, '1', '0');
+                        currWriter.WriteLine($"{datum.realFrame - realFrameStart},{datum.fixedFrame - physFrameStart},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{InKeys(datum.inKeys)}");
+                    }
+                }
+            } finally {
+                currWriter?.Dispose();
             }
         }
 
