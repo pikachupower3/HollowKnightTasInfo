@@ -317,16 +317,16 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         public static float OnRangeFloatFsm(float min, float max, string name, FsmStateAction action) {
-            return OnRangeFloat(min, max, $"[{action.Fsm?.GameObjectName ?? ""}]{name}");
+            return OnRangeFloat(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}]{name}");
         }
 
         public static int OnRangeIntFsm(int min, int max, string name, FsmStateAction action) {
-            return OnRangeInt(min, max, $"[{action.Fsm?.GameObjectName ?? ""}]{name}");
+            return OnRangeInt(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}]{name}");
         }
 
         public static int OnGetRwiFsm(FsmFloat[] weights, string name, FsmStateAction action) {
             lock (_lock) {
-                var compName = $"[{action.Fsm?.GameObjectName ?? ""}]{name}";
+                var compName = $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}]{name}";
                 int result;
                 if (EnablePlayback && TryGetPlayback(compName, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
