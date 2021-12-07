@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -17,12 +18,15 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private List<Data[]> _blocks;
         private KeyCode[] _keysToMonitor;
         private string[] _keyStrings;
+        private string[] _inputStrings;
         private int _blockIndex;
         private int _dataIndex;
         private int _estRealFrame;
         private string _lastScene;
 
         public static string LastScene => _instance?._lastScene ?? "";
+
+        public const bool OutputCombinedLog = false;
 
         public static void OnInit() {
             _instance = new SyncLogger();
@@ -53,24 +57,47 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 KeyCode.I,
                 KeyCode.S,
                 KeyCode.Tab,
-                KeyCode.Return
+                KeyCode.Return,
+                KeyCode.RightBracket,
+                KeyCode.LeftBracket
             };
             _keyStrings = new[] {
                 "L",
                 "R",
                 "U",
                 "D",
-                "[Z]",
-                "[X]",
-                "[C]",
-                "[A]",
-                "[D]",
-                "[F]",
+                "z",
+                "x",
+                "c",
+                "a",
+                "d",
+                "f",
                 "Esc",
-                "[I]",
-                "[S]",
+                "i",
+                "s",
                 "Tab",
-                "Ent"
+                "Ent",
+                "]",
+                "["
+            };
+            _inputStrings = new[] {
+                "ff51",
+                "ff53",
+                "ff52",
+                "ff54",
+                "7a",
+                "78",
+                "63",
+                "61",
+                "64",
+                "66",
+                "ff1b",
+                "69",
+                "73",
+                "ff09",
+                "ff0d",
+                "5d",
+                "5b"
             };
         }
 
@@ -93,6 +120,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 DumpLogFile();
                 RandomInjection.DumpLogs();
             }
+
+            if (Input.GetKey(KeyCode.RightBracket)) {
+                RandomInjection.RollRngNextScene();
+            }
         }
 
         private void RecordData() {
@@ -107,6 +138,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             block[_dataIndex].fixedFrame = Mathf.RoundToInt(Time.fixedTime/Time.fixedDeltaTime);
             block[_dataIndex].realTime = Time.time;
             block[_dataIndex].fixedTime = Time.fixedTime;
+            block[_dataIndex].unscaledDeltaTime = Time.unscaledDeltaTime;
 
             var hero = GameManager.instance.hero_ctrl;
             if (hero) {
@@ -149,19 +181,21 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         private void DumpLogFile() {
-            using (var stream = File.Open("./HollowKnightSyncLog.csv", FileMode.Create, FileAccess.Write)) 
-            using (var writer = new StreamWriter(stream)){
-                writer.WriteLine("RF,PF,RT,FT,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,RNG_Cnt,Scene,InK,PhEn,PhEx,PhSt");
-                for (int i = 0; i < _blocks.Count; i++) {
-                    int dataCount = i < _blocks.Count - 1 ? BlockSize : _dataIndex;
-                    for (int k = 0; k < dataCount; k++) {
-                        var datum = _blocks[i][k];
-                        var canInput = FlagChar(datum, DataFlags.CanInput, '1', '0');
-                        var wallSliding = FlagChar(datum, DataFlags.WallSliding, '1', '0');
-                        var dashing = FlagChar(datum, DataFlags.Dashing, '1', '0');
-                        var cDashing = FlagChar(datum, DataFlags.CDashing, '1', '0');
-                        var diving = FlagChar(datum, DataFlags.Diving, '1', '0');
-                        writer.WriteLine($"{datum.realFrame},{datum.fixedFrame},{datum.realTime},{datum.fixedTime},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{datum.rollTimes},{datum.scene},{InKeys(datum.inKeys)},{datum.phEn},{datum.phEx},{datum.phSt}");
+            if (OutputCombinedLog) {
+                using (var stream = File.Open("./HollowKnightSyncLog.csv", FileMode.Create, FileAccess.Write)) 
+                using (var writer = new StreamWriter(stream)){
+                    writer.WriteLine("RF,PF,RT,FT,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,RNG_Cnt,Scene,InK,PhEn,PhEx,PhSt");
+                    for (int i = 0; i < _blocks.Count; i++) {
+                        int dataCount = i < _blocks.Count - 1 ? BlockSize : _dataIndex;
+                        for (int k = 0; k < dataCount; k++) {
+                            var datum = _blocks[i][k];
+                            var canInput = FlagChar(datum, DataFlags.CanInput, '1', '0');
+                            var wallSliding = FlagChar(datum, DataFlags.WallSliding, '1', '0');
+                            var dashing = FlagChar(datum, DataFlags.Dashing, '1', '0');
+                            var cDashing = FlagChar(datum, DataFlags.CDashing, '1', '0');
+                            var diving = FlagChar(datum, DataFlags.Diving, '1', '0');
+                            writer.WriteLine($"{datum.realFrame},{datum.fixedFrame},{datum.realTime},{datum.fixedTime},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{datum.rollTimes},{datum.scene},{InKeys(datum.inKeys)},{datum.phEn},{datum.phEx},{datum.phSt}");
+                        }
                     }
                 }
             }
@@ -170,10 +204,15 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (!Directory.Exists(diagPath))
                 Directory.CreateDirectory(diagPath);
 
+            var inputsPath = "./Inputs";
+            if (!Directory.Exists(inputsPath))
+                Directory.CreateDirectory(inputsPath);
+
             int sceneIndex = 0;
             int realFrameStart = 0;
             int physFrameStart = 0;
-            StreamWriter currWriter = null;
+            StreamWriter diagWriter = null;
+            StreamWriter inputsWriter = null;
             try {
                 string lastScene = null;
                 for (int i = 0; i < _blocks.Count; i++) {
@@ -183,12 +222,30 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         if (string.IsNullOrEmpty(datum.scene))
                             continue;
 
-                        if (currWriter == null || datum.scene != lastScene) {
+                        if (diagWriter == null || datum.scene != lastScene) {
                             lastScene = datum.scene;
-                            currWriter?.Dispose();
-                            var file = File.Open($"{diagPath}/S{sceneIndex:00000}_{lastScene}_Diag.csv", FileMode.Create, FileAccess.Write);
-                            currWriter = new StreamWriter(file);
-                            currWriter.WriteLine("RelFrame,RelPhysFrame,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,InK");
+
+                            diagWriter?.Dispose();
+                            var diagFile = File.Open($"{diagPath}/S{sceneIndex:00000}_{lastScene}_Diag.csv", FileMode.Create, FileAccess.Write);
+                            diagWriter = new StreamWriter(diagFile);
+                            diagWriter.WriteLine("RelFrame,RelPhysFrame,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,InK");
+
+                            //bool isNew = inputsWriter == null;
+                            inputsWriter?.Dispose();
+                            var inputsFile = File.Open($"{inputsPath}/S{sceneIndex:00000}_{lastScene}_Inputs.txt", FileMode.Create, FileAccess.Write);
+                            inputsWriter = new StreamWriter(inputsFile);
+
+                            //When starting a new frame, automatically tag it with a '[' to make it easier to find when editing
+                            var bracketIndex = Array.FindIndex(_keysToMonitor, key => key == KeyCode.LeftBracket);
+                            datum.inKeys |= (uint)(1 << bracketIndex);
+
+                            //if (isNew) {
+                            //    //The first scene has bunch of blank input frames prior to receiving any input
+                            //    for (int frame = 0; frame < datum.realFrame; frame++) {
+                            //        inputsWriter.WriteLine("|K|");
+                            //    }
+                            //}
+
                             realFrameStart = datum.realFrame;
                             physFrameStart = datum.fixedFrame;
                             sceneIndex++;
@@ -199,11 +256,27 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         var dashing = FlagChar(datum, DataFlags.Dashing, '1', '0');
                         var cDashing = FlagChar(datum, DataFlags.CDashing, '1', '0');
                         var diving = FlagChar(datum, DataFlags.Diving, '1', '0');
-                        currWriter.WriteLine($"{datum.realFrame - realFrameStart},{datum.fixedFrame - physFrameStart},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{InKeys(datum.inKeys)}");
+                        diagWriter.WriteLine($"{datum.realFrame - realFrameStart},{datum.fixedFrame - physFrameStart},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{InKeys(datum.inKeys)}");
+
+                        Data? nextDatum = null;
+                        if (k < dataCount - 1) {
+                            nextDatum = _blocks[i][k + 1];
+                        }
+                        else if (i < _blocks.Count - 1) {
+                            nextDatum = _blocks[i + 1][0];
+                        }
+                        if (nextDatum != null) {
+                            var frameRate = Mathf.RoundToInt(1f/nextDatum.Value.unscaledDeltaTime);
+                            var frameRateText = frameRate != 100 ? $"T{frameRate}:1|" : "";
+                            inputsWriter.WriteLine($"{InputsFormat(datum.inKeys)}{frameRateText}");
+                        } else {
+                            inputsWriter.WriteLine($"{InputsFormat(datum.inKeys)}");
+                        }
                     }
                 }
             } finally {
-                currWriter?.Dispose();
+                diagWriter?.Dispose();
+                inputsWriter?.Dispose();
             }
         }
 
@@ -219,6 +292,26 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 }
             }
 
+            return builder.ToString();
+        }
+
+        private string InputsFormat(uint inKeys) {
+            var builder = new StringBuilder();
+            builder.Append("|K");
+            bool anyKeys = false;
+            for (int i = 0; i < _keysToMonitor.Length; i++) {
+                if ((inKeys & (uint) (1 << i)) != 0) {
+                    builder.Append(_inputStrings[i]);
+                    builder.Append(":");
+                    anyKeys = true;
+                }
+            }
+
+            //Remove excess delimiter
+            if (anyKeys) {
+                builder.Remove(builder.Length - 1, 1);
+            }
+            builder.Append('|');
             return builder.ToString();
         }
 
@@ -238,6 +331,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             public int fixedFrame;
             public float realTime;
             public float fixedTime;
+            public float unscaledDeltaTime;
             public float posX;
             public float posY;
             public float velX;

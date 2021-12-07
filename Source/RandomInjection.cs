@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -11,6 +12,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour.HookGen;
+using Debug = UnityEngine.Debug;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
     public static class RandomInjection {
@@ -23,10 +25,13 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static List<string> _sceneNames;
         private static object _lock;
         private static int _sceneIndex;
+        private static int _nextSceneRollCount;
 
         public static bool EnablePlayback;
         public static bool EnableRecording;
         public static bool EnableDetailLogging;
+
+        private const BindingFlags allFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         public static void Init() {
             _lock = new object();
@@ -45,86 +50,119 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             _getRwi = typeof(ActionHelpers).GetMethod("GetRandomWeightedIndex", BindingFlags.Static | BindingFlags.Public);
 
             var targetMethods = new List<MethodInfo>();
-            targetMethods.Add(typeof(Breakable).GetMethod("Break", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(Breakable).GetMethod("SpawnNailHitEffect", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(BreakableInfectedVine).GetMethod("SpawnSpatters", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(BreakableObject.FlingObject).GetMethod("Fling", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(BreakableObject).GetMethod("OnTriggerEnter2D", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(BreakablePole).GetMethod("TakeDamage", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(BreakablePoleSimple).GetMethod("OnTriggerEnter2D", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(BreakableWithExternalDebris).GetMethod("Spawn", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(DebrisParticle).GetMethod("OnEnable", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(DebrisPiece).GetMethod("Launch", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(DebrisPiece).GetMethod("Spin", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(DropCrystal).GetMethod("OnCollisionEnter2D", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(DropCrystal).GetMethod("OnEnable", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(DropCrystal).GetMethod("Start", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(GameManager).GetMethod("TimePasses", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(HealthCocoon).GetMethod("FlingObjects", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(HealthCocoon).GetMethod("OnTriggerEnter2D", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(HeroController).GetMethod("TakeDamage", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(AnimatorFollow).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(ArrayGetRandom).GetMethod("DoGetRandomValue", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(ArrayListGetRandom).GetMethod("GetRandomItem", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(ArrayListShuffle).GetMethod("DoArrayListShuffle", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(ArrayShuffle).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(ChaseObject).GetMethod("DoBuzz", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(CreatePoolObjects).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(DistanceWalk).GetMethod("DoWalk", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(FireAtTarget).GetMethod("DoSetVelocity", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(Flicker).GetMethod("OnUpdate", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(FlingFlashingGeo).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(FlingObject).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(FlingObjects).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(FlingObjectsFromGlobalPool).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(FlingObjectsFromGlobalPoolTime).GetMethod("OnUpdate", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(FlingObjectsFromGlobalPoolVel).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(GetRandomChild).GetMethod("DoGetRandomChild", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(GetRandomObject).GetMethod("DoGetRandomObject", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(IdleBuzz).GetMethod("DoBuzz", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(IdleBuzzV2).GetMethod("DoBuzz", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(IdleBuzzV3).GetMethod("DoBuzz", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(ObjectJitter).GetMethod("DoTranslate", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(ObjectJitterLocal).GetMethod("DoTranslate", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomBool).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomEvent).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomEvent).GetMethod("GetRandomEvent", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomFloat).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomFloatEither).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomFloatV2).GetMethod("Randomise", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomInt).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomlyFlipFloat).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomFloatEither).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(RandomWait).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(SetRandomRotation).GetMethod("DoRandomRotation", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpawnFromPool).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpawnFromPoolV2).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpawnObjectFromGlobalPoolOverTimeV2).GetMethod("OnUpdate", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpawnRandomObjects).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpawnRandomObjectsOverTime).GetMethod("DoSpawn", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpawnRandomObjectsOverTimeV2).GetMethod("DoSpawn", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpawnRandomObjectsV2).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpawnRandomObjectsVelocity).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(WaitRandom).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance));
-            targetMethods.Add(typeof(WalkLeftRight).GetMethod("SetupStartingDirection", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(IdleBuzzing).GetMethod("Buzz", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(InfectedBurstLarge).GetMethod("OnTriggerEnter2D", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(InfectedBurstSmall).GetMethod("OnTriggerEnter2D", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(ObjectBounce).GetMethod("OnCollisionEnter2D", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(Probability).GetMethod("GetRandomGameObjectByProbability", BindingFlags.Public | BindingFlags.Static));
-            targetMethods.Add(typeof(PushableRubble).GetMethod("Push", BindingFlags.NonPublic | BindingFlags.Static));
-            targetMethods.Add(typeof(RandomRotation).GetMethod("RandomRotate", BindingFlags.NonPublic | BindingFlags.Static));
-            targetMethods.Add(typeof(RandomScale).GetMethod("onEnable", BindingFlags.NonPublic | BindingFlags.Static));
-            targetMethods.Add(typeof(RandomScale).GetMethod("Start", BindingFlags.NonPublic | BindingFlags.Static));
-            targetMethods.Add(typeof(SetZ).GetMethod("OnEnable", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SetZRandom).GetMethod("OnEnable", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SimpleRock).GetMethod("OnTriggerEnter", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SimpleRock).GetMethod("Start", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpatterOrange).GetMethod("Impact", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpatterOrange).GetMethod("Start", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpinSelf).GetMethod("Start", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(SpinSelfSimple).GetMethod("OnEnable", BindingFlags.NonPublic | BindingFlags.Instance));
-            targetMethods.Add(typeof(StalactiteControl).GetMethod("FlingObjects", BindingFlags.NonPublic | BindingFlags.Instance));
+            Add(targetMethods, typeof(AudioSourcePitchRandomizer).GetMethod("Awake", allFlags));
+            Add(targetMethods, typeof(Breakable).GetMethod("Break", allFlags));
+            Add(targetMethods, typeof(Breakable).GetMethod("SpawnNailHitEffect", allFlags));
+            Add(targetMethods, typeof(BreakableInfectedVine).GetMethod("OnTriggerEnter2D", allFlags));
+            Add(targetMethods, typeof(BreakableInfectedVine).GetMethod("SpawnSpatters", allFlags));
+            Add(targetMethods, typeof(BreakableObject.FlingObject).GetMethod("Fling", allFlags));
+            Add(targetMethods, typeof(BreakableObject).GetMethod("OnTriggerEnter2D", allFlags));
+            Add(targetMethods, typeof(BreakablePole).GetMethod("TakeDamage", allFlags));
+            Add(targetMethods, typeof(BreakablePoleSimple).GetMethod("OnTriggerEnter2D", allFlags));
+            Add(targetMethods, typeof(BreakableWithExternalDebris).GetMethod("Spawn", allFlags));
+            Add(targetMethods, typeof(CrystalPieceSize).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(DebrisParticle).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(DebrisPiece).GetMethod("Launch", allFlags));
+            Add(targetMethods, typeof(DebrisPiece).GetMethod("Spin", allFlags));
+            Add(targetMethods, typeof(DropCrystal).GetMethod("OnCollisionEnter2D", allFlags));
+            Add(targetMethods, typeof(DropCrystal).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(DropCrystal).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(GameManager).GetMethod("TimePasses", allFlags));
+            Add(targetMethods, typeof(HealthCocoon).GetMethod("FlingObjects", allFlags));
+            Add(targetMethods, typeof(HealthCocoon).GetMethod("OnTriggerEnter2D", allFlags));
+            Add(targetMethods, typeof(HeroAudioController).GetMethod("RandomizePitch", allFlags));
+            Add(targetMethods, typeof(HeroController).GetNestedType("<CheckForTerrainThunk>c__Iterator1C", BindingFlags.NonPublic).GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(HeroController).GetMethod("TakeDamage", allFlags));
+            Add(targetMethods, typeof(AnimatorFollow).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(ArrayGetRandom).GetMethod("DoGetRandomValue", allFlags));
+            Add(targetMethods, typeof(ArrayListGetRandom).GetMethod("GetRandomItem", allFlags));
+            Add(targetMethods, typeof(ArrayListShuffle).GetMethod("DoArrayListShuffle", allFlags));
+            Add(targetMethods, typeof(ArrayShuffle).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(AudioPlayerOneShot).GetMethod("DoPlayRandomClip", allFlags));
+            Add(targetMethods, typeof(AudioPlayerOneShotSingle).GetMethod("DoPlayRandomClip", allFlags));
+            Add(targetMethods, typeof(AudioPlayRandom).GetMethod("DoPlayRandomClip", allFlags));
+            Add(targetMethods, typeof(AudioPlayRandomSingle).GetMethod("DoPlayRandomClip", allFlags));
+            Add(targetMethods, typeof(ChaseObject).GetMethod("DoBuzz", allFlags));
+            Add(targetMethods, typeof(CreatePoolObjects).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(DistanceWalk).GetMethod("DoWalk", allFlags));
+            Add(targetMethods, typeof(FireAtTarget).GetMethod("DoSetVelocity", allFlags));
+            Add(targetMethods, typeof(Flicker).GetMethod("OnUpdate", allFlags));
+            Add(targetMethods, typeof(FlingFlashingGeo).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(FlingObject).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(FlingObjects).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(FlingObjectsFromGlobalPool).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(FlingObjectsFromGlobalPoolTime).GetMethod("OnUpdate", allFlags));
+            Add(targetMethods, typeof(FlingObjectsFromGlobalPoolVel).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(GetRandomChild).GetMethod("DoGetRandomChild", allFlags));
+            Add(targetMethods, typeof(GetRandomObject).GetMethod("DoGetRandomObject", allFlags));
+            Add(targetMethods, typeof(IdleBuzz).GetMethod("DoBuzz", allFlags));
+            Add(targetMethods, typeof(IdleBuzzV2).GetMethod("DoBuzz", allFlags));
+            Add(targetMethods, typeof(IdleBuzzV3).GetMethod("DoBuzz", allFlags));
+            Add(targetMethods, typeof(ObjectJitter).GetMethod("DoTranslate", allFlags));
+            Add(targetMethods, typeof(ObjectJitterLocal).GetMethod("DoTranslate", allFlags));
+            Add(targetMethods, typeof(RandomBool).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(RandomEvent).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(RandomEvent).GetMethod("GetRandomEvent", allFlags));
+            Add(targetMethods, typeof(RandomFloat).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(RandomFloatEither).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(RandomFloatV2).GetMethod("Randomise", allFlags));
+            Add(targetMethods, typeof(RandomInt).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(RandomlyFlipFloat).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(RandomFloatEither).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(RandomWait).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(SetRandomMaterial).GetMethod("DoSetRandomMaterial", allFlags));
+            Add(targetMethods, typeof(SetRandomRotation).GetMethod("DoRandomRotation", allFlags));
+            Add(targetMethods, typeof(SpawnFromPool).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(SpawnFromPoolV2).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(SpawnObjectFromGlobalPoolOverTimeV2).GetMethod("OnUpdate", allFlags));
+            Add(targetMethods, typeof(SpawnRandomObjects).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(SpawnRandomObjectsOverTime).GetMethod("DoSpawn", allFlags));
+            Add(targetMethods, typeof(SpawnRandomObjectsOverTimeV2).GetMethod("DoSpawn", allFlags));
+            Add(targetMethods, typeof(SpawnRandomObjectsV2).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(SpawnRandomObjectsVelocity).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(Tk2dSpriteSetIdRandom).GetMethod("DoSetSpriteID", allFlags));
+            Add(targetMethods, typeof(WaitRandom).GetMethod("OnEnter", allFlags));
+            Add(targetMethods, typeof(WalkLeftRight).GetMethod("SetupStartingDirection", allFlags));
+            Add(targetMethods, typeof(IdleBuzzing).GetMethod("Buzz", allFlags));
+            Add(targetMethods, typeof(InfectedBurstLarge).GetMethod("OnTriggerEnter2D", allFlags));
+            Add(targetMethods, typeof(InfectedBurstLarge).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(InfectedBurstSmall).GetMethod("OnTriggerEnter2D", allFlags));
+            Add(targetMethods, typeof(InfectedBurstSmall).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(iTween).GetMethod("ApplyShakePositionTargets", allFlags));
+            Add(targetMethods, typeof(iTween).GetMethod("ApplyShakeRotationTargets", allFlags));
+            Add(targetMethods, typeof(iTween).GetMethod("ApplyShakeScaleTargets", allFlags));
+            Add(targetMethods, typeof(iTween).GetMethod("GenerateID", allFlags));
+            Add(targetMethods, typeof(LiftPlatform).GetMethod("OnCollisionEnter2D", allFlags));
+            Add(targetMethods, typeof(ObjectBounce).GetMethod("OnCollisionEnter2D", allFlags));
+            Add(targetMethods, typeof(PlayFromRandomFrame).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(PlayFromRandomFrameMecanim).GetNestedType("<DelayStart>c__IteratorA", BindingFlags.NonPublic).GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(Probability).GetMethod("GetRandomGameObjectByProbability", allFlags));
+            Add(targetMethods, typeof(PushableRubble).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(PushableRubble).GetMethod("Push", allFlags));
+            Add(targetMethods, typeof(RandomAudioClipTable).GetMethod("SelectClip", allFlags));
+            Add(targetMethods, typeof(RandomAudioClipTable).GetMethod("SelectPitch", allFlags));
+            Add(targetMethods, typeof(RandomRotation).GetMethod("RandomRotate", allFlags));
+            Add(targetMethods, typeof(RandomScale).GetMethod("onEnable", allFlags));
+            Add(targetMethods, typeof(RandomScale).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(RecycleAfter2dtkAnimation).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(SceneryTriggerCircle).GetMethod("RandomizePitch", allFlags));
+            Add(targetMethods, typeof(SetRandomSpriteId).GetMethod("Init", allFlags));
+            Add(targetMethods, typeof(SetZ).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(SetZRandom).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(SimpleRock).GetMethod("OnTriggerEnter", allFlags));
+            Add(targetMethods, typeof(SimpleRock).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(SpatterOrange).GetMethod("Impact", allFlags));
+            Add(targetMethods, typeof(SpatterOrange).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(SpinSelf).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(SpinSelfSimple).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(SplashAnimator).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(StalactiteControl).GetMethod("FlingObjects", allFlags));
+            Add(targetMethods, typeof(TinkEffect).GetMethod("OnTriggerEnter2D", allFlags));
+            Add(targetMethods, typeof(tk2dSpriteAnimator).GetMethod("Play", allFlags, null, new [] {typeof(tk2dSpriteAnimationClip), typeof(float), typeof(float)}, null));
+            Add(targetMethods, typeof(TownGrass).GetMethod("OnTriggerEnter2D", allFlags));
+            Add(targetMethods, typeof(UnityEngine.ParticleEmitter).GetMethod("Emit", allFlags, null, new Type[] {}, null));
+            Add(targetMethods, typeof(WaterDrip).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(WaterDrip).GetMethod("Update", allFlags));
             foreach (var method in targetMethods.Where(m => m != null)) {
                 if (typeof(FsmStateAction).IsAssignableFrom(method.DeclaringType)) {
                     InjectOnRangeFsm(method);
@@ -133,23 +171,39 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 }
             }
 
+            if (targetMethods.Any(m => m == null))
+                Debug.Log("One or more Random-using methods failed to bind");
+
             var rwiMethods = new[] {
-                typeof(SelectRandomGameObject).GetMethod("DoSelectRandomGameObject", BindingFlags.NonPublic | BindingFlags.Instance),
-                typeof(SelectRandomString).GetMethod("DoSelectRandomString", BindingFlags.NonPublic | BindingFlags.Instance),
-                typeof(SelectRandomVector3).GetMethod("DoSelectRandomColor", BindingFlags.NonPublic | BindingFlags.Instance), //This is a copy/paste error in the game code; intentional
-                typeof(SendRandomEvent).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance),
-                typeof(SendRandomEventV2).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance),
-                typeof(SendRandomEventV3).GetMethod("OnEnter", BindingFlags.Public | BindingFlags.Instance),
+                typeof(AudioPlayerOneShot).GetMethod("DoPlayRandomClip", allFlags),
+                typeof(AudioPlayRandom).GetMethod("DoPlayRandomClip", allFlags),
+                typeof(PlayRandomAnimation).GetMethod("DoPlayRandomAnimation", allFlags),
+                typeof(PlayRandomSound).GetMethod("DoPlayRandomClip", allFlags),
+                typeof(SelectRandomColor).GetMethod("DoSelectRandomColor", allFlags),
+                typeof(SelectRandomGameObject).GetMethod("DoSelectRandomGameObject", allFlags),
+                typeof(SelectRandomString).GetMethod("DoSelectRandomString", allFlags),
+                typeof(SelectRandomVector3).GetMethod("DoSelectRandomColor", allFlags), //This is a copy/paste error in the game code; intentional
+                typeof(SendRandomEvent).GetMethod("OnEnter", allFlags),
+                typeof(SendRandomEventV2).GetMethod("OnEnter", allFlags),
+                typeof(SendRandomEventV3).GetMethod("OnEnter", allFlags),
             };
             foreach (var method in rwiMethods.Where(m => m != null)) {
                 InjectGetRwiFsm(method);
             }
+
+            if (rwiMethods.Any(m => m == null))
+                Debug.Log("One or more RWI-using methods failed to bind");
 
             _playback = new List<Dictionary<string, PlaybackState>>();
             _recording = new List<Dictionary<string, List<float>>>();
 
             if (EnablePlayback)
                 LoadPlaybackFiles();
+        }
+
+        private static void Add(List<MethodInfo> targetMethods, MethodInfo method) {
+            targetMethods.Add(method);
+            Debug.Log($"Hooked Random in {method.Name}");
         }
 
         private static void LoadPlaybackFiles() {
@@ -218,6 +272,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
+        public static void RollRngNextScene() {
+            _nextSceneRollCount++;
+        }
+
         public static void NotifyBeginScene(string sceneName) {
             lock (_lock) {
                 _sceneNames.Add(sceneName);
@@ -232,6 +290,18 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         public static void OnLeftScene() {
             _sceneIndex++;
+            if (_nextSceneRollCount > 0) {
+                //Repeatedly call Random to increment the seed
+                for (int i = 0; i < _nextSceneRollCount; i++) {
+                    var discard = UnityEngine.Random.Range(0, 1);
+                }
+                _nextSceneRollCount = 0;
+
+                //Disable playback for just this scene
+                if (_sceneIndex < _playback.Count) {
+                    _playback[_sceneIndex].Clear();
+                }
+            }
         }
 
         private static void InjectOnRange(MethodInfo method) {
@@ -353,16 +423,16 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         public static float OnRangeFloatFsm(float min, float max, string name, FsmStateAction action) {
-            return OnRangeFloat(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}]{name}");
+            return OnRangeFloat(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
         }
 
         public static int OnRangeIntFsm(int min, int max, string name, FsmStateAction action) {
-            return OnRangeInt(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}]{name}");
+            return OnRangeInt(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
         }
 
         public static int OnGetRwiFsm(FsmFloat[] weights, string name, FsmStateAction action) {
             lock (_lock) {
-                var compName = $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}]{name}";
+                var compName = $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}";
                 int result;
                 if (EnablePlayback && TryGetPlayback(compName, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
