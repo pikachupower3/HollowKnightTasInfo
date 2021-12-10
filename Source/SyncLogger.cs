@@ -124,6 +124,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (Input.GetKey(KeyCode.RightBracket)) {
                 RandomInjection.RollRngNextScene();
             }
+
+            if (Input.GetKey(KeyCode.Backslash)) {
+                GameManager.instance.FreezeMoment(2);
+            }
         }
 
         private void RecordData() {
@@ -228,7 +232,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                             diagWriter?.Dispose();
                             var diagFile = File.Open($"{diagPath}/S{sceneIndex:00000}_{lastScene}_Diag.csv", FileMode.Create, FileAccess.Write);
                             diagWriter = new StreamWriter(diagFile);
-                            diagWriter.WriteLine("RelFrame,RelPhysFrame,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,InK");
+                            diagWriter.WriteLine("RelFrame,RelPhysFrame,T-FT,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,InK");
 
                             //bool isNew = inputsWriter == null;
                             inputsWriter?.Dispose();
@@ -256,7 +260,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         var dashing = FlagChar(datum, DataFlags.Dashing, '1', '0');
                         var cDashing = FlagChar(datum, DataFlags.CDashing, '1', '0');
                         var diving = FlagChar(datum, DataFlags.Diving, '1', '0');
-                        diagWriter.WriteLine($"{datum.realFrame - realFrameStart},{datum.fixedFrame - physFrameStart},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{InKeys(datum.inKeys)}");
+                        diagWriter.WriteLine($"{datum.realFrame - realFrameStart},{datum.fixedFrame - physFrameStart},{datum.realTime - datum.fixedTime},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{InKeys(datum.inKeys)}");
 
                         Data? nextDatum = null;
                         if (k < dataCount - 1) {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,6 +14,7 @@ ShowKnightInfo = true
 ShowCustomInfo = true
 ShowSceneName = true
 ShowTime = true
+ShowTimeMinusFixedTime = true
 ShowRng = true
 
 ShowEnemyHp = true
@@ -65,6 +66,7 @@ DisableCameraShake = false
         public static bool ShowKnightInfo => Enabled && GetSettingValue<bool>(nameof(ShowKnightInfo));
         public static bool ShowSceneName => Enabled && GetSettingValue<bool>(nameof(ShowSceneName));
         public static bool ShowTime => Enabled && GetSettingValue<bool>(nameof(ShowTime));
+        public static bool ShowTimeMinusFixedTime => Enabled && GetSettingValue<bool>(nameof(ShowTimeMinusFixedTime));
         public static bool ShowRng => Enabled && GetSettingValue<bool>(nameof(ShowRng));
         public static bool ShowEnemyHp => Enabled && GetSettingValue<bool>(nameof(ShowEnemyHp));
         public static bool ShowEnemyPosition => Enabled && GetSettingValue<bool>(nameof(ShowEnemyPosition));

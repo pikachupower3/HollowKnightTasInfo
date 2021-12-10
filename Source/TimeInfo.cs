@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -103,6 +103,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             string resultString = StringUtils.Join("  ", result);
             if (!string.IsNullOrEmpty(resultString)) {
                 infoBuilder.AppendLine(resultString);
+            }
+
+            if (ConfigManager.ShowTimeMinusFixedTime) {
+                infoBuilder.AppendLine($"T-FT {1000*(Time.time - Time.fixedTime):00.0000} ms");
             }
         }
     }
