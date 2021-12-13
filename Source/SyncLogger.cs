@@ -270,8 +270,23 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                             nextDatum = _blocks[i + 1][0];
                         }
                         if (nextDatum != null) {
-                            var frameRate = Mathf.RoundToInt(1f/nextDatum.Value.unscaledDeltaTime);
-                            var frameRateText = frameRate != 100 ? $"T{frameRate}:1|" : "";
+                            //Compute FPS at high resolution
+                            int fpsDenom = 1000000;
+                            int fpsNumer = Mathf.RoundToInt(fpsDenom*1f/nextDatum.Value.unscaledDeltaTime);
+                            string frameRateText;
+                            if (fpsNumer != 100*fpsDenom) {
+                                //Reduce fraction to simplify
+                                while (fpsDenom > 1 && fpsNumer%10 == 0) {
+                                    fpsNumer /= 10;
+                                    fpsDenom /= 10;
+                                }
+
+                                frameRateText = $"T{fpsNumer}:{fpsDenom}|";
+                            } else {
+                                //At 100 FPS, don't need to add anything
+                                frameRateText = "";
+                            }
+
                             inputsWriter.WriteLine($"{InputsFormat(datum.inKeys)}{frameRateText}");
                         } else {
                             inputsWriter.WriteLine($"{InputsFormat(datum.inKeys)}");
