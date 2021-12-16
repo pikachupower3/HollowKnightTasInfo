@@ -19,30 +19,6 @@ public class patch_GameManager : GameManager {
         orig_LeftScene(doAdditiveLoad);
     }
 
-    //[MonoModIgnore]
-    //public extern void orig_TransitionScene(TransitionPoint gate);
-
-    //[MonoModIgnore]
-    //public extern void orig_ChangeToScene(string targetScene, string entryGateName, float pauseBeforeEnter);
-
-    //[MonoModIgnore]
-    //public extern void orig_WarpToDreamGate();
-
-    //public new void TransitionScene(TransitionPoint gate) {
-    //    RngSyncer.OnLeftScene();
-    //    orig_TransitionScene(gate);
-    //}
-
-    //public new void ChangeToScene(string targetScene, string entryGateName, float pauseBeforeEnter) {
-    //    RngSyncer.OnLeftScene();
-    //    orig_ChangeToScene(targetScene, entryGateName, pauseBeforeEnter);
-    //}
-
-    //public new void WarpToDreamGate() {
-    //    RngSyncer.OnLeftScene();
-    //    orig_WarpToDreamGate();
-    //}
-
 #if V1028
     [MonoModIgnore]
     private extern void orig_ManualLevelStart();

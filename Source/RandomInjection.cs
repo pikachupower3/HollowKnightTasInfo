@@ -31,6 +31,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         public static bool EnableRecording;
         public static bool EnableDetailLogging;
 
+        public static int SceneIndex => _sceneIndex;
+
         private const BindingFlags allFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         public static void Init() {

@@ -69,7 +69,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             CustomInfo.OnInit();
             HitboxInfo.OnInit();
             RngInfo.OnInit();
-            SyncLogger.OnInit();
+            DiagnosticsLogger.OnInit();
             RandomInjection.Init();
         }
 
@@ -86,7 +86,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             EnemyInfo.OnPreRender(gameManager, infoBuilder);
             HitboxInfo.OnPreRender(gameManager, infoBuilder);
             RngInfo.OnPreRender(infoBuilder);
-            SyncLogger.OnPreRender();
+            DiagnosticsLogger.OnPreRender();
         }
     }
 }
