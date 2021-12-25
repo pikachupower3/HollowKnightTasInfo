@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net35</TargetFramework>
         <LangVersion>9</LangVersion>
-        <Configurations>v1028;v1221;v1432</Configurations>
+        <Configurations>v1028;v1221;v1432;v1028_Krythom</Configurations>
         <Platforms>AnyCPU</Platforms>
         <AssemblyVersion>0.2.5</AssemblyVersion>
         <FileVersion>0.2.5</FileVersion>
@@ -17,6 +17,12 @@
         <Optimize>true</Optimize>
         <DebugType>none</DebugType>
         <OutputPath>bin\v1028\</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)'=='v1028_Krythom'">
+      <Optimize>true</Optimize>
+      <DebugType>none</DebugType>
+      <OutputPath>bin\v1028_Krythom\</OutputPath>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'v1221' ">
@@ -88,6 +94,10 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='v1028|AnyCPU'">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='v1028_Krythom|AnyCPU'">
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 

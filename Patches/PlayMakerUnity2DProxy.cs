@@ -8,7 +8,7 @@ using MonoMod.Utils;
 
 // ReSharper disable All
 
-public class patch_PlayMakerUnity2DProxy : PlayMakerUnity2DProxy {
+class patch_PlayMakerUnity2DProxy : PlayMakerUnity2DProxy {
     [MonoModIgnore]
     [PatchStart]
     public extern new void Start();

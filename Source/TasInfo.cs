@@ -57,7 +57,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         // 重叠房间加载后重新采集数据
-#if V1028
+#if V1028 || V1028_KRYTHOM
         public static void AfterManualLevelStart() {
             EnemyInfo.RefreshInfo(false);
             HitboxInfo.RefreshInfo(false);

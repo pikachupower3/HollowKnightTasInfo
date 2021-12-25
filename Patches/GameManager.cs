@@ -7,7 +7,7 @@ using MonoMod;
 
 #pragma warning disable CS0649, CS0414
 
-public class patch_GameManager : GameManager {
+class patch_GameManager : GameManager {
     private static readonly long TasInfoMark = 1234567890123456789;
     public static string TasInfo;
 
@@ -19,7 +19,7 @@ public class patch_GameManager : GameManager {
         orig_LeftScene(doAdditiveLoad);
     }
 
-#if V1028
+#if V1028 || V1028_KRYTHOM
     [MonoModIgnore]
     private extern void orig_ManualLevelStart();
     private void ManualLevelStart() {

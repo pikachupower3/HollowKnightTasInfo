@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -89,7 +89,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         private static bool IsDamageHero(Collider2D col) {
-#if V1028
+#if V1028 || V1028_KRYTHOM
             return col.gameObject.LocateMyFSM("damages_hero");
 #else
             return col.GetComponent<DamageHero>() || col.gameObject.LocateMyFSM("damages_hero");
