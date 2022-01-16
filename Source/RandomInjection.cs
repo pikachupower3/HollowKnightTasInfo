@@ -91,10 +91,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 LoadPlaybackFiles();
         }
 
-        [Conditional("V1221")]
-        private static void AddRandomCalls1221(List<MethodInfo> targetMethods) {
-        }
-
         private static void AddRandomCalls(List<MethodInfo> targetMethods) {
 #if V1221
             Add(targetMethods, typeof(Breakable).GetMethod("Break", allFlags));
@@ -170,6 +166,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Add(targetMethods, typeof(IdleBuzz).GetMethod("DoBuzz", allFlags));
             Add(targetMethods, typeof(IdleBuzzV2).GetMethod("DoBuzz", allFlags));
             Add(targetMethods, typeof(IdleBuzzV3).GetMethod("DoBuzz", allFlags));
+            Add(targetMethods, typeof(ObjectBounce).GetMethod("OnCollisionEnter2D", allFlags));
             Add(targetMethods, typeof(ObjectJitter).GetMethod("DoTranslate", allFlags));
             Add(targetMethods, typeof(ObjectJitterLocal).GetMethod("DoTranslate", allFlags));
             Add(targetMethods, typeof(RandomBool).GetMethod("OnEnter", allFlags));
