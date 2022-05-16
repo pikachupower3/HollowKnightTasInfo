@@ -93,6 +93,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         private static void AddRandomCalls(List<MethodInfo> targetMethods) {
 #if V1221
+            Add(targetMethods, typeof(WaterDrip).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(WaterDrip).GetMethod("Update", allFlags));
+            Add(targetMethods, typeof(PushableRubble).GetMethod("OnEnable", allFlags));
+#endif
+#if V1221 || V1432
             Add(targetMethods, typeof(Breakable).GetMethod("Break", allFlags));
             Add(targetMethods, typeof(Breakable).GetMethod("SpawnNailHitEffect", allFlags));
             Add(targetMethods, typeof(BreakableInfectedVine).GetMethod("OnTriggerEnter2D", allFlags));
@@ -117,7 +122,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Add(targetMethods, typeof(InfectedBurstSmall).GetMethod("Start", allFlags));
             Add(targetMethods, typeof(LiftPlatform).GetMethod("OnCollisionEnter2D", allFlags));
             Add(targetMethods, typeof(Probability).GetMethod("GetRandomGameObjectByProbability", allFlags));
-            Add(targetMethods, typeof(PushableRubble).GetMethod("OnEnable", allFlags));
             Add(targetMethods, typeof(PushableRubble).GetMethod("Push", allFlags));
             Add(targetMethods, typeof(RandomAudioClipTable).GetMethod("SelectClip", allFlags));
             Add(targetMethods, typeof(RandomAudioClipTable).GetMethod("SelectPitch", allFlags));
@@ -130,10 +134,67 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Add(targetMethods, typeof(StalactiteControl).GetMethod("FlingObjects", allFlags));
             Add(targetMethods, typeof(TinkEffect).GetMethod("OnTriggerEnter2D", allFlags));
             Add(targetMethods, typeof(TownGrass).GetMethod("OnTriggerEnter2D", allFlags));
-            Add(targetMethods, typeof(WaterDrip).GetMethod("Start", allFlags));
-            Add(targetMethods, typeof(WaterDrip).GetMethod("Update", allFlags));
-            Add(targetMethods, typeof(HeroController).GetNestedType("<CheckForTerrainThunk>c__Iterator1C", BindingFlags.NonPublic).GetMethod("MoveNext", allFlags));
-            Add(targetMethods, typeof(PlayFromRandomFrameMecanim).GetNestedType("<DelayStart>c__IteratorA", BindingFlags.NonPublic).GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(HeroController).GetNestedType("<CheckForTerrainThunk>c__Iterator1C", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(PlayFromRandomFrameMecanim).GetNestedType("<DelayStart>c__IteratorA", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+#endif
+#if V1432
+            Add(targetMethods, typeof(BigCentipede).GetMethod("Awake", allFlags));
+            Add(targetMethods, typeof(BossStatue).GetNestedType("<Jitter>c__Iterator1", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(BounceShroom).GetNestedType("<Idle>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(BounceShroom).GetMethod("<Start>m__0", allFlags));
+            Add(targetMethods, typeof(Breakable.FlingObject).GetMethod("Fling", allFlags));
+            Add(targetMethods, typeof(Corpse).GetNestedType("<DropThroughFloor>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(CorpseDeathStun).GetNestedType("<Jitter>c__Iterator1", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(CorpseDeathStunChunker).GetNestedType("<Jitter>c__Iterator1", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(CorpseFungusExplode).GetNestedType("<Jitter>c__Iterator1", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(CorpseGoopExplode).GetNestedType("<Jitter>c__Iterator1", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(CorpseHatcher).GetMethod("Smash", allFlags));
+            Add(targetMethods, typeof(CorpseZomHive).GetMethod("LandEffects", allFlags));
+            Add(targetMethods, typeof(EnemyBullet).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(EnemyDeathEffects).GetMethod("EmitCorpse", allFlags));
+            Add(targetMethods, typeof(EnemyDeathEffects).GetMethod("EmitEssence", allFlags));
+            Add(targetMethods, typeof(EnemyHitEffectsShade).GetMethod("RecieveHitEffect", allFlags));
+            Add(targetMethods, typeof(EnemySpawner).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(FakeBat).GetNestedType("<SendOutRoutine>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(FakeBat).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(FlingUtils).GetMethod("FlingChildren", allFlags));
+            Add(targetMethods, typeof(FlingUtils).GetMethod("FlingObject", allFlags));
+            Add(targetMethods, typeof(FlingUtils).GetMethod("SpawnAndFling", allFlags));
+            Add(targetMethods, typeof(FlipPlatform).GetNestedType("<Idle>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(GeoControl).GetNestedType("<Getter>c__Iterator1", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(GeoControl).GetMethod("OnCollisionEnter2D", allFlags));
+            Add(targetMethods, typeof(GeoControl).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(GeoControl).GetMethod("PlayCollectSound", allFlags));
+            Add(targetMethods, typeof(GrimmballControl).GetNestedType("<DoFire>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(GrubBGControl).GetNestedType("<Idle>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(HealthManager).GetMethod("TakeDamage", allFlags));
+            Add(targetMethods, typeof(HeroController).GetMethod("TakeDamage", allFlags));
+            Add(targetMethods, typeof(ShakePosition).GetMethod("UpdateShaking", allFlags));
+            Add(targetMethods, typeof(KnightHatchling).GetNestedType("<Spawn>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(KnightHatchling).GetMethod("DoBuzz", allFlags));
+            Add(targetMethods, typeof(KnightHatchling).GetMethod("FixedUpdate", allFlags));
+            Add(targetMethods, typeof(KnightHatchling).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(KnightHatchling).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(MegaJellyZap).GetNestedType("<MultiZapSequence>c__Iterator1", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(PaintBullet).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(ScuttlerControl).GetNestedType("<Bounce>c__Iterator2", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(ScuttlerControl).GetMethod("Hit", allFlags));
+            Add(targetMethods, typeof(ScuttlerControl).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(SetWalkerFacing).GetMethod("Apply", allFlags));
+            Add(targetMethods, typeof(SpawnJarControl).GetNestedType("<Behaviour>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(SpellFluke).GetMethod("<Start>m__1", allFlags));
+            Add(targetMethods, typeof(SpellFluke).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(SpellGetOrb).GetMethod("OnEnable", allFlags));
+            Add(targetMethods, typeof(SpellGetOrb).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(SpinSelf).GetMethod("Start", allFlags));
+            Add(targetMethods, typeof(Walker).GetMethod("BeginStopped", allFlags));
+            Add(targetMethods, typeof(Walker).GetMethod("BeginWalking", allFlags));
+            Add(targetMethods, typeof(Walker).GetMethod("EndStopping", allFlags));
+            Add(targetMethods, typeof(Walker).GetMethod("StartMoving", allFlags));
+            Add(targetMethods, typeof(WeaverlingEnemyList).GetMethod("GetTarget", allFlags));
+#endif
+#if V1221 || V1028 || V1028_KRYTHOM
+            Add(targetMethods, typeof(UnityEngine.ParticleEmitter).GetMethod("Emit", allFlags, null, new Type[] { }, null));
 #endif
             Add(targetMethods, typeof(AudioSourcePitchRandomizer).GetMethod("Awake", allFlags));
             Add(targetMethods, typeof(DropCrystal).GetMethod("OnCollisionEnter2D", allFlags));
@@ -177,7 +238,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Add(targetMethods, typeof(RandomFloatV2).GetMethod("Randomise", allFlags));
             Add(targetMethods, typeof(RandomInt).GetMethod("OnEnter", allFlags));
             Add(targetMethods, typeof(RandomlyFlipFloat).GetMethod("OnEnter", allFlags));
-            Add(targetMethods, typeof(RandomFloatEither).GetMethod("OnEnter", allFlags));
             Add(targetMethods, typeof(RandomWait).GetMethod("OnEnter", allFlags));
             Add(targetMethods, typeof(SetRandomMaterial).GetMethod("DoSetRandomMaterial", allFlags));
             Add(targetMethods, typeof(SetRandomRotation).GetMethod("DoRandomRotation", allFlags));
@@ -207,12 +267,15 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Add(targetMethods, typeof(SimpleRock).GetMethod("Start", allFlags));
             Add(targetMethods, typeof(SpinSelf).GetMethod("Start", allFlags));
             Add(targetMethods, typeof(tk2dSpriteAnimator).GetMethod("Play", allFlags, null, new[] {typeof(tk2dSpriteAnimationClip), typeof(float), typeof(float)}, null));
-            Add(targetMethods, typeof(UnityEngine.ParticleEmitter).GetMethod("Emit", allFlags, null, new Type[] { }, null));
         }
 
         private static void Add(List<MethodInfo> targetMethods, MethodInfo method) {
-            targetMethods.Add(method);
-            Debug.Log($"Hooked Random in {method.Name}");
+            if (method != null) {
+                targetMethods.Add(method);
+                Debug.Log($"Hooked Random in {method.Name}");
+            } else {
+                Debug.Log("Failed to hook Random as could not locate method");
+            }
         }
 
         private static void LoadPlaybackFiles() {
