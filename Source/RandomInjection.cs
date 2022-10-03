@@ -12,6 +12,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour.HookGen;
+using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
@@ -42,6 +43,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             EnableDetailLogging = false;
             EnablePlayback = true;
             _sceneIndex = 0;
+            _sceneNames.Add("Start");
 
             if (EnableDetailLogging)
                 _detailLog = new List<string>();
@@ -134,10 +136,14 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Add(targetMethods, typeof(StalactiteControl).GetMethod("FlingObjects", allFlags));
             Add(targetMethods, typeof(TinkEffect).GetMethod("OnTriggerEnter2D", allFlags));
             Add(targetMethods, typeof(TownGrass).GetMethod("OnTriggerEnter2D", allFlags));
-            Add(targetMethods, typeof(HeroController).GetNestedType("<CheckForTerrainThunk>c__Iterator1C", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+#endif
+#if V1221
             Add(targetMethods, typeof(PlayFromRandomFrameMecanim).GetNestedType("<DelayStart>c__IteratorA", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(HeroController).GetNestedType("<CheckForTerrainThunk>c__Iterator1C", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
 #endif
 #if V1432
+            Add(targetMethods, typeof(PlayFromRandomFrameMecanim).GetNestedType("<DelayStart>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
+            Add(targetMethods, typeof(HeroController).GetNestedType("<CheckForTerrainThunk>c__IteratorB", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
             Add(targetMethods, typeof(BigCentipede).GetMethod("Awake", allFlags));
             Add(targetMethods, typeof(BossStatue).GetNestedType("<Jitter>c__Iterator1", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
             Add(targetMethods, typeof(BounceShroom).GetNestedType("<Idle>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
@@ -348,20 +354,54 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             _nextSceneRollCount++;
         }
 
-        public static void NotifyBeginScene(string sceneName) {
+        //public static void NotifyBeginScene(string destScene) {
+        //    if (!_leftScene) {
+        //        _sceneIndex++;
+        //    }
+        //    _leftScene = false;
+
+        //    lock (_lock) {
+        //        _sceneNames.Add(destScene);
+        //        if (EnableDetailLogging && _detailLog != null) {
+        //            _detailLog.Add("");
+        //            _detailLog.Add("");
+        //            _detailLog.Add("### Scene: " + destScene);
+        //            _detailLog.Add("");
+        //        }
+        //    }
+        //}
+
+        //public static void OnLeftScene() {
+        //    _sceneIndex++;
+        //    _leftScene = true;
+        //    Debug.Log("Left scene");
+        //    if (_nextSceneRollCount > 0) {
+        //        //Repeatedly call Random to increment the seed
+        //        for (int i = 0; i < _nextSceneRollCount; i++) {
+        //            var discard = UnityEngine.Random.Range(0, 1);
+        //        }
+        //        _nextSceneRollCount = 0;
+
+        //        //Disable playback for just this scene
+        //        if (_sceneIndex < _playback.Count-1) {
+        //            _playback[_sceneIndex+1].Clear();
+        //        }
+        //    }
+        //}
+
+        public static void OnChangeScene(Scene scene) {
             lock (_lock) {
-                _sceneNames.Add(sceneName);
+                _sceneIndex++;
+                var name = scene.name;
+                _sceneNames.Add(name);
                 if (EnableDetailLogging && _detailLog != null) {
                     _detailLog.Add("");
                     _detailLog.Add("");
-                    _detailLog.Add("### Scene: " + sceneName);
+                    _detailLog.Add("### Scene: " + name);
                     _detailLog.Add("");
                 }
             }
-        }
 
-        public static void OnLeftScene() {
-            _sceneIndex++;
             if (_nextSceneRollCount > 0) {
                 //Repeatedly call Random to increment the seed
                 for (int i = 0; i < _nextSceneRollCount; i++) {
@@ -448,6 +488,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         public static float OnRangeFloat(float min, float max, string name) {
             lock (_lock) {
+                CheckScene();
                 name = $"{name}({min}:{max})";
                 float result;
                 if (EnablePlayback && TryGetPlayback(name, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
@@ -472,6 +513,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         public static int OnRangeInt(int min, int max, string name) {
             lock (_lock) {
+                CheckScene();
                 name = $"{name}({min}:{max})";
                 int result;
                 if (EnablePlayback && TryGetPlayback(name, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
@@ -504,6 +546,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         public static int OnGetRwiFsm(FsmFloat[] weights, string name, FsmStateAction action) {
             lock (_lock) {
+                CheckScene();
                 var compName = $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}";
                 int result;
                 if (EnablePlayback && TryGetPlayback(compName, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
@@ -523,6 +566,13 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 }
 
                 return result;
+            }
+        }
+
+        private static void CheckScene() {
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (scene.name != _sceneNames[_sceneIndex]) {
+                OnChangeScene(scene);
             }
         }
 

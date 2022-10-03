@@ -159,7 +159,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 block[_dataIndex].scene = scene;
                 if (scene != _lastScene) {
                     _lastScene = scene;
-                    RandomInjection.NotifyBeginScene(scene);
+                    //RandomInjection.NotifyBeginScene(scene);
                 }
             }
 
