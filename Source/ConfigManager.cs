@@ -26,6 +26,7 @@ ShowOtherHitbox = false
 
 PositionPrecision = 5
 VelocityPrecision = 3
+ForceGatheringSwarm = false
 
 # 碰撞箱颜色 ARGB 格式，注释或删除则不显示该类 hitbox
 KnightHitbox = 0xFF00FF00
@@ -75,10 +76,12 @@ DisableCameraShake = false
         public static bool ShowOtherHitbox => Enabled && GetSettingValue<bool>(nameof(ShowOtherHitbox));
         public static int PositionPrecision => GetSettingValue(nameof(PositionPrecision), 5);
         public static int VelocityPrecision => GetSettingValue(nameof(VelocityPrecision), 3);
+        public static bool ForceGatheringSwarm => GetSettingValue(nameof(ForceGatheringSwarm), false);
         public static float CameraZoom => Enabled ? GetSettingValue(nameof(CameraZoom), 1f) : 1f;
         public static bool CameraFollow => Enabled && GetSettingValue<bool>(nameof(CameraFollow));
         public static bool DisableCameraShake => Enabled && GetSettingValue<bool>(nameof(DisableCameraShake));
         public static bool IsCameraZoom => CameraZoom > 0f && Math.Abs(CameraZoom - 1f) > 0.001;
+        public static float StartingGameTime => GetSettingValue<float>(nameof(StartingGameTime));
 
         public static string GetHitboxColorValue(HitboxInfo.HitboxType hitboxType) {
             return GetSettingValue($"{hitboxType}Hitbox", string.Empty);

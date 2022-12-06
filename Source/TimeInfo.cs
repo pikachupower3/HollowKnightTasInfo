@@ -45,8 +45,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             GameState gameState = gameManager.gameState;
 
             if (!timeStart && (nextScene.Equals("Tutorial_01", StringComparison.OrdinalIgnoreCase) && gameState == GameState.ENTERING_LEVEL ||
-                               nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene")) {
+                               nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene" ||
+                               HeroController.instance != null)) {
                 timeStart = true;
+                inGameTime = ConfigManager.StartingGameTime;
             }
 
             if (timeStart && !timeEnd && (nextScene.StartsWith("Cinematic_Ending", StringComparison.OrdinalIgnoreCase) ||
