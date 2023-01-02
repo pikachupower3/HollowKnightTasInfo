@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
     internal static class ConfigManager {
@@ -14,6 +15,7 @@ ShowKnightInfo = true
 ShowCustomInfo = true
 ShowSceneName = true
 ShowTime = true
+ShowTimeOnly = false
 ShowTimeMinusFixedTime = true
 ShowRng = true
 
@@ -27,6 +29,10 @@ ShowOtherHitbox = false
 PositionPrecision = 5
 VelocityPrecision = 3
 ForceGatheringSwarm = false
+GiveLantern = false
+UseLegacyRngSync = false
+StartingGameTime = 0
+PauseTimer = false
 
 # 碰撞箱颜色 ARGB 格式，注释或删除则不显示该类 hitbox
 KnightHitbox = 0xFF00FF00
@@ -63,23 +69,25 @@ DisableCameraShake = false
         private static readonly Dictionary<string, string> Settings = new();
         public static string CustomInfoTemplate { get; private set; } = string.Empty;
         public static bool Enabled => GetSettingValue<bool>(nameof(Enabled));
-        public static bool ShowCustomInfo => Enabled && GetSettingValue<bool>(nameof(ShowCustomInfo));
-        public static bool ShowKnightInfo => Enabled && GetSettingValue<bool>(nameof(ShowKnightInfo));
-        public static bool ShowSceneName => Enabled && GetSettingValue<bool>(nameof(ShowSceneName));
+        public static bool ShowTimeOnly => Enabled && GetSettingValue<bool>(nameof(ShowTimeOnly));
+        public static bool ShowCustomInfo => Enabled && GetSettingValue<bool>(nameof(ShowCustomInfo)) && !ShowTimeOnly;
+        public static bool ShowKnightInfo => Enabled && GetSettingValue<bool>(nameof(ShowKnightInfo)) && !ShowTimeOnly;
+        public static bool ShowSceneName => Enabled && GetSettingValue<bool>(nameof(ShowSceneName)) && !ShowTimeOnly;
         public static bool ShowTime => Enabled && GetSettingValue<bool>(nameof(ShowTime));
-        public static bool ShowTimeMinusFixedTime => Enabled && GetSettingValue<bool>(nameof(ShowTimeMinusFixedTime));
-        public static bool ShowRng => Enabled && GetSettingValue<bool>(nameof(ShowRng));
-        public static bool ShowEnemyHp => Enabled && GetSettingValue<bool>(nameof(ShowEnemyHp));
-        public static bool ShowEnemyPosition => Enabled && GetSettingValue<bool>(nameof(ShowEnemyPosition));
-        public static bool ShowEnemyVelocity => Enabled && GetSettingValue<bool>(nameof(ShowEnemyVelocity));
-        public static bool ShowHitbox => Enabled && GetSettingValue<bool>(nameof(ShowHitbox));
-        public static bool ShowOtherHitbox => Enabled && GetSettingValue<bool>(nameof(ShowOtherHitbox));
-        public static bool ShowGroundedTime => Enabled && GetSettingValue<bool>(nameof(ShowGroundedTime));
+        public static bool ShowTimeMinusFixedTime => Enabled && GetSettingValue<bool>(nameof(ShowTimeMinusFixedTime)) && !ShowTimeOnly;
+        public static bool ShowRng => Enabled && GetSettingValue<bool>(nameof(ShowRng)) && !ShowTimeOnly;
+        public static bool ShowEnemyHp => Enabled && GetSettingValue<bool>(nameof(ShowEnemyHp)) && !ShowTimeOnly;
+        public static bool ShowEnemyPosition => Enabled && GetSettingValue<bool>(nameof(ShowEnemyPosition)) && !ShowTimeOnly;
+        public static bool ShowEnemyVelocity => Enabled && GetSettingValue<bool>(nameof(ShowEnemyVelocity)) && !ShowTimeOnly;
+        public static bool ShowHitbox => Enabled && GetSettingValue<bool>(nameof(ShowHitbox)) && !ShowTimeOnly;
+        public static bool ShowOtherHitbox => Enabled && GetSettingValue<bool>(nameof(ShowOtherHitbox)) && !ShowTimeOnly;
+        public static bool ShowGroundedTime => Enabled && GetSettingValue<bool>(nameof(ShowGroundedTime)) && !ShowTimeOnly;
         public static int PositionPrecision => GetSettingValue(nameof(PositionPrecision), 5);
         public static int VelocityPrecision => GetSettingValue(nameof(VelocityPrecision), 3);
         public static bool ForceGatheringSwarm => GetSettingValue(nameof(ForceGatheringSwarm), false);
         public static bool GiveLantern => GetSettingValue(nameof(GiveLantern), false);
         public static bool UseLegacyRngSync => GetSettingValue(nameof(UseLegacyRngSync), true);
+        public static bool PauseTimer => GetSettingValue(nameof(PauseTimer), false);
         public static float CameraZoom => Enabled ? GetSettingValue(nameof(CameraZoom), 1f) : 1f;
         public static bool CameraFollow => Enabled && GetSettingValue<bool>(nameof(CameraFollow));
         public static bool DisableCameraShake => Enabled && GetSettingValue<bool>(nameof(DisableCameraShake));
