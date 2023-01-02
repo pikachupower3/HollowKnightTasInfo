@@ -19,6 +19,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         private static Vector3 lastPosition = Vector3.zero;
         private static float frameRate => Time.unscaledDeltaTime == 0 ? 0 : 1 / Time.unscaledDeltaTime;
+        public static float GroundedTime;
 
         public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             if (gameManager.hero_ctrl is { } heroController) {
@@ -50,6 +51,16 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     }
                 }
 
+                var grounded = heroController.cState.onGround;
+                var transitioning = heroController.cState.transitioning;
+                if (grounded && !transitioning) {
+                    GroundedTime += Time.deltaTime;
+                }
+
+                if (ConfigManager.ShowGroundedTime) {
+                    infoBuilder.AppendLine($"Grounded {Mathf.RoundToInt(1000*GroundedTime)} ms");
+                }
+
                 if (ConfigManager.ForceGatheringSwarm) {
                     var playerData = PlayerData.instance;
                     if (playerData != null && !playerData.equippedCharm_1) {
@@ -58,6 +69,13 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         if (!playerData.equippedCharms.Contains(1)) {
                             playerData.equippedCharms.Add(1);
                         }
+                    }
+                }
+
+                if (ConfigManager.GiveLantern) {
+                    var playerData = PlayerData.instance;
+                    if (playerData != null && !playerData.hasLantern) {
+                        playerData.hasLantern = true;
                     }
                 }
             }
