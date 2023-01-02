@@ -82,7 +82,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     || uiState != UIState.PLAYING &&
                     (loadingMenu || uiState != UIState.PAUSED && (!string.IsNullOrEmpty(nextScene) || currentScene == "_test_charms")) &&
                     nextScene != currentScene
-                    || minorVersion < 3 && (bool)TilemapDirtyFieldInfo.GetValue(gameManager);
+                    || minorVersion < 3 && (bool)TilemapDirtyFieldInfo.GetValue(gameManager)
+                    || ConfigManager.PauseTimer;
             } catch {
                 // ignore
             }
