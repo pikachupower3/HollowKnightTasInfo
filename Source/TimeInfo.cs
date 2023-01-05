@@ -38,6 +38,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         private static GameState lastGameState;
         private static bool lookForTeleporting;
+        private static bool isPaused = false;
+
+        public static void PausedKeyPress() {
+            isPaused = !isPaused;
+        }
 
         public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             string currentScene = gameManager.sceneName;
@@ -83,7 +88,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     (loadingMenu || uiState != UIState.PAUSED && (!string.IsNullOrEmpty(nextScene) || currentScene == "_test_charms")) &&
                     nextScene != currentScene
                     || minorVersion < 3 && (bool)TilemapDirtyFieldInfo.GetValue(gameManager)
-                    || ConfigManager.PauseTimer;
+                    || ConfigManager.PauseTimer
+                    || isPaused;
             } catch {
                 // ignore
             }
