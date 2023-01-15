@@ -57,7 +57,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         // 重叠房间加载后重新采集数据
-#if V1028 || V1028_KRYTHOM
+#if V1028 || V1028_KRYTHOM || V1037
         public static void AfterManualLevelStart() {
             EnemyInfo.RefreshInfo(false);
             HitboxInfo.RefreshInfo(false);
@@ -69,8 +69,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             CustomInfo.OnInit();
             HitboxInfo.OnInit();
             RngInfo.OnInit();
-            DiagnosticsLogger.OnInit();
-            RandomInjection.Init();
         }
 
         private static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
@@ -86,7 +84,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             EnemyInfo.OnPreRender(gameManager, infoBuilder);
             HitboxInfo.OnPreRender(gameManager, infoBuilder);
             RngInfo.OnPreRender(infoBuilder);
-            DiagnosticsLogger.OnPreRender();
         }
     }
 }
