@@ -80,6 +80,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             HeroInfo.OnPreRender(gameManager, infoBuilder);
             CustomInfo.OnPreRender(gameManager, infoBuilder);
+            AutoSplit.OnPreRender(gameManager, infoBuilder);
             TimeInfo.OnPreRender(gameManager, infoBuilder);
             EnemyInfo.OnPreRender(gameManager, infoBuilder);
             HitboxInfo.OnPreRender(gameManager, infoBuilder);
