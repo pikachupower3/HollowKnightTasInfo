@@ -115,10 +115,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 }
                 HeroController.instance.proxyFSM.SendEvent("HeroCtrl-HeroDamaged");
             }
-
-            if (Input.GetKeyDown(KeyCode.P)) {
-                TimeInfo.PausedKeyPress();
-            }
         }
 
         private void RecordData() {

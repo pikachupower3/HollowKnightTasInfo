@@ -40,14 +40,14 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static bool lookForTeleporting;
         private static bool isPaused = false;
 
-        public static void PausedKeyPress() {
-            isPaused = !isPaused;
-        }
-
         public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             string currentScene = gameManager.sceneName;
             string nextScene = gameManager.nextSceneName;
             GameState gameState = gameManager.gameState;
+
+            if (Input.GetKeyDown(KeyCode.P)) {
+                isPaused = !isPaused;
+            }
 
             if (!timeStart && (nextScene.Equals("Tutorial_01", StringComparison.OrdinalIgnoreCase) && gameState == GameState.ENTERING_LEVEL ||
                                nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene" ||
