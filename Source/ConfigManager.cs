@@ -33,7 +33,6 @@ PositionPrecision = 5
 VelocityPrecision = 3
 ForceGatheringSwarm = false
 GiveLantern = false
-UseLegacyRngSync = false
 StartingGameTime = 0
 PauseTimer = false
 
