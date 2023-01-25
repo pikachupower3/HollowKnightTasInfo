@@ -71,10 +71,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             CustomInfo.OnInit();
             HitboxInfo.OnInit();
             RngInfo.OnInit();
-            DiagnosticsLogger.OnInit();
-            RandomInjection.Init();
             SplitReader.OnInit();
             AutoSplit.OnInit(gameManager);
+            DiagnosticsLogger.OnInit();
+            RandomInjection.Init();
         }
 
         private static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
