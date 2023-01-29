@@ -2857,6 +2857,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+            if (!SplitReader.ReadSplits) {
+                return;
+            }
+
             string currentScene = gameManager.sceneName;
             string nextScene = gameManager.nextSceneName;
             GameState gameState = gameManager.gameState;
