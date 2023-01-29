@@ -10,6 +10,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         public static List<SplitClass> SplitList = new List<SplitClass>();
         public static void OnInit() {
 
+            if (File.Exist(ConfigManager.SplitFileLocation)) {
+                return;
+            }
+
             XmlTextReader reader = new XmlTextReader(ConfigManager.SplitFileLocation);
 
             XmlDocument doc = new XmlDocument();
