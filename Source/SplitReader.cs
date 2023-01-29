@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml;
@@ -8,7 +8,15 @@ using System.Xml;
 namespace Assembly_CSharp.TasInfo.mm.Source {
     internal class SplitReader { 
         public static List<SplitClass> SplitList = new List<SplitClass>();
+        public static bool ReadSplits = false;
         public static void OnInit() {
+
+            if (!File.Exists(ConfigManager.SplitFileLocation)) {
+                Console.WriteLine("Can't read splits");
+                return;
+            }
+
+            ReadSplits = true;
 
             XmlTextReader reader = new XmlTextReader(ConfigManager.SplitFileLocation);
 
