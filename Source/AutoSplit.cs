@@ -12,6 +12,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
     public struct Split {
         private string _splitTitle;
         private float _splitTime;
+        private float _prevSplitTime;
         private float _totalTime;
         private SplitName _splitTrigger;
 
@@ -20,6 +21,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         public Split(string splitTitle, SplitName splitTrigger) {
             _splitTitle = splitTitle;
             _splitTime = 0f;
+            _prevSplitTime = 0f;
             _totalTime = 0f;
             _splitTrigger = splitTrigger;
         }
@@ -28,13 +30,14 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         public float TotalTime => _totalTime;
         public SplitName SplitTrigger => _splitTrigger;
 
-        public void StartSplitTimer(float time) {
+        public void StartSplitTimer(float time, float prevSplitTime) {
             _totalTime = time;
+            _prevSplitTime = prevSplitTime;
         }
 
         public void IncreaseTimer(float time) {
-            _splitTime += time;
             _totalTime += time;
+            _splitTime = _totalTime - _prevSplitTime;
         }
     }
 
@@ -2846,7 +2849,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                                HeroController.instance != null)) {
                 timeStart = true;
                 ref Split refSplit = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-                refSplit.StartSplitTimer(inGameTime);
+                refSplit.StartSplitTimer(inGameTime, 0f);
             }
 
             if (timeStart && !timeEnd && (nextScene.StartsWith("Cinematic_Ending", StringComparison.OrdinalIgnoreCase) ||
@@ -2898,7 +2901,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 if (currentSplitIndex < SplitReader.SplitList.Count-1) {
                     currentSplitIndex++;
                     ref Split newSplitRef = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-                    newSplitRef.StartSplitTimer(inGameTime);
+                    newSplitRef.StartSplitTimer(inGameTime, splitRef.TotalTime);
                 } else {
                     SplitLastSplit = true;
                 }
