@@ -1,4 +1,6 @@
+using HutongGames.Utility;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
@@ -21,6 +23,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             AdditionalInfo = string.Empty;
 
             StringBuilder infoBuilder = new();
+
+            if (Input.GetKeyDown(KeyCode.Q)) {
+                LiveSplitWrite.WriteTest(AutoSplit.liveSplitData);
+            }
 
             try {
                 DesyncChecker.BeforeUpdate();

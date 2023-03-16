@@ -74,6 +74,12 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static bool isPaused = false;
         private static readonly int minorVersion = int.Parse(Constants.GAME_VERSION.Substring(2, 1));
         public static bool SplitLastSplit = false;
+        public static List<string> liveSplitData =  new List<string>();
+        private static double timeSincePause = 0f;
+        private static double timeSinceResume = 0f;
+        private static bool didInit = false;
+        private static bool didSplit = false;
+
 
         private static string FormattedTime {
             get {
@@ -1341,7 +1347,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.Essence2400:
                     shouldSplit = gameManager.playerData.dreamOrbs >= 2400;
                     break;
-
+                    // 1:10.46
                 case SplitName.KingsPass:
                     shouldSplit = sceneName.StartsWith("Tutorial_01") && nextScene.StartsWith("Town");
                     break;
@@ -2848,6 +2854,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                                nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene" ||
                                HeroController.instance != null)) {
                 timeStart = true;
+                liveSplitData.Add(timeSinceResume.ToString() + "Init");
+                timeSinceResume = 0f;
                 ref Split refSplit = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
                 refSplit.StartSplitTimer(inGameTime, 0f);
             }
@@ -2894,8 +2902,24 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             ref Split splitRef = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
 
             if (timeStart && !timePaused && !timeEnd) {
+                if (timeSinceResume == 0f && !didSplit) {
+                    liveSplitData.Add(timeSincePause.ToString() + "Resume");;
+                    timeSincePause = 0f;
+                }
                 inGameTime += Time.unscaledDeltaTime;
                 splitRef.IncreaseTimer(Time.unscaledDeltaTime);
+                timeSinceResume += Time.unscaledDeltaTime;
+            }
+            if (timeStart && timePaused && !timeEnd) {
+                if (timeSincePause == 0f && inGameTime != 0) {
+                    liveSplitData.Add(timeSinceResume.ToString() + "Pause");
+                    timeSinceResume = 0f;
+                }
+                didSplit = false;
+                timeSincePause += Time.unscaledDeltaTime;
+            }
+            if (!didInit) {
+                timeSincePause += Time.unscaledDeltaTime;
             }
             if (!SplitLastSplit && CheckSplit(gameManager, splitRef.SplitTrigger, gameManager.nextSceneName, gameManager.sceneName)) {
                 if (currentSplitIndex < SplitReader.SplitList.Count-1) {
@@ -2905,6 +2929,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 } else {
                     SplitLastSplit = true;
                 }
+                liveSplitData.Add(timeSincePause.ToString() + "Split");
+                timeSincePause = 0f;
+                didSplit = true;
             }
             if (inGameTime > 0 && ConfigManager.ShowSplits) {
                 infoBuilder.AppendLine(FormattedTime);
