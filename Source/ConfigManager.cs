@@ -93,6 +93,8 @@ DisableCameraShake = false
         public static bool DisableCameraShake => Enabled && GetSettingValue<bool>(nameof(DisableCameraShake));
         public static bool IsCameraZoom => CameraZoom > 0f && Math.Abs(CameraZoom - 1f) > 0.001;
         public static float StartingGameTime => GetSettingValue<float>(nameof(StartingGameTime));
+        public static int StartingSoul => GetSettingValue<int>(nameof(StartingSoul));
+        public static int StartingHealth => GetSettingValue<int>(nameof(StartingHealth));
 
         public static string GetHitboxColorValue(HitboxInfo.HitboxType hitboxType) {
             return GetSettingValue($"{hitboxType}Hitbox", string.Empty);

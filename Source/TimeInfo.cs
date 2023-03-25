@@ -12,7 +12,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static readonly FieldInfo TeleportingFieldInfo = typeof(CameraController).GetFieldInfo("teleporting");
         private static readonly FieldInfo TilemapDirtyFieldInfo = typeof(GameManager).GetFieldInfo("tilemapDirty");
 
-        private static bool timeStart = false;
+        public static bool timeStart = false;
         private static bool timeEnd = false;
         private static float inGameTime = 0f;
         private static readonly int minorVersion = int.Parse(Constants.GAME_VERSION.Substring(2, 1));

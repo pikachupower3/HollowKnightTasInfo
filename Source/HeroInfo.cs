@@ -20,6 +20,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static Vector3 lastPosition = Vector3.zero;
         private static float frameRate => Time.unscaledDeltaTime == 0 ? 0 : 1 / Time.unscaledDeltaTime;
         public static float GroundedTime;
+        private static bool hasStarted;
 
         public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             if (gameManager.hero_ctrl is { } heroController) {
@@ -61,8 +62,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     infoBuilder.AppendLine($"Grounded {Mathf.RoundToInt(1000*GroundedTime)} ms");
                 }
 
+                var playerData = PlayerData.instance;
                 if (ConfigManager.ForceGatheringSwarm) {
-                    var playerData = PlayerData.instance;
                     if (playerData != null && !playerData.equippedCharm_1) {
                         playerData.gotCharm_1 = true;
                         playerData.equippedCharm_1 = true;
@@ -73,9 +74,21 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 }
 
                 if (ConfigManager.GiveLantern) {
-                    var playerData = PlayerData.instance;
                     if (playerData != null && !playerData.hasLantern) {
                         playerData.hasLantern = true;
+                    }
+                }
+
+                if (!hasStarted && Input.GetKeyDown(KeyCode.LeftBracket) && playerData != null) {
+                    hasStarted = true;
+                    if (ConfigManager.StartingSoul > 0) {
+                        heroController.AddMPCharge(ConfigManager.StartingSoul);
+                    }
+                    if (ConfigManager.StartingHealth > 0) {
+                        playerData.damagedBlue = playerData.healthBlue > 0;
+                        playerData.healthBlue = 0;
+                        playerData.health = ConfigManager.StartingHealth;
+                        HeroController.instance.proxyFSM.SendEvent("HeroCtrl-HeroDamaged");
                     }
                 }
             }

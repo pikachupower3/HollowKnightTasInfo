@@ -154,6 +154,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 block[_dataIndex].velX = hero.current_velocity.x;
                 block[_dataIndex].velY = hero.current_velocity.y;
                 block[_dataIndex].rollTimes = RngInfo.rollTimes;
+                block[_dataIndex].groundedTime = HeroInfo.GroundedTime;
 
                 var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
                 block[_dataIndex].scene = scene;
@@ -209,7 +210,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                             diagWriter?.Dispose();
                             var diagFile = File.Open($"{diagPath}/S{sceneIndex:00000}_{lastScene}_Diag.csv", FileMode.Create, FileAccess.Write);
                             diagWriter = new StreamWriter(diagFile);
-                            diagWriter.WriteLine("RelFrame,RelPhysFrame,T-FT,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,InK");
+                            diagWriter.WriteLine("RelFrame,RelPhysFrame,GT,T-FT,InE,WC,DSH,CDSH,DIV,X,Y,VX,VY,InK");
                             realFrameStart = datum.realFrame;
                             physFrameStart = datum.fixedFrame;
                             sceneIndex++;
@@ -220,7 +221,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         var dashing = FlagChar(datum, DataFlags.Dashing, '1', '0');
                         var cDashing = FlagChar(datum, DataFlags.CDashing, '1', '0');
                         var diving = FlagChar(datum, DataFlags.Diving, '1', '0');
-                        diagWriter.WriteLine($"{datum.realFrame - realFrameStart},{datum.fixedFrame - physFrameStart},{datum.realTime - datum.fixedTime},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{InKeys(datum.inKeys)}");
+                        diagWriter.WriteLine($"{datum.realFrame - realFrameStart},{datum.fixedFrame - physFrameStart},{datum.groundedTime},{datum.realTime - datum.fixedTime},{canInput},{wallSliding},{dashing},{cDashing},{diving},{datum.posX},{datum.posY},{datum.velX},{datum.velY},{InKeys(datum.inKeys)}");
                     }
                 }
             } finally {
@@ -265,6 +266,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             public float velY;
             public ulong rollTimes;
             public string scene;
+            public float groundedTime;
             public uint inKeys;
         }
     }
