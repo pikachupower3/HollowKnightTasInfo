@@ -20,6 +20,9 @@ ShowTimeOnly = false
 ShowTimeMinusFixedTime = true
 ShowRng = true
 
+# Put the name of the room you want the timer to start on.
+# Leave empty if you don't want it to start on a specific transition.
+TimerStartTransition = 
 SplitFileLocation = ./split.lss
 
 ShowEnemyHp = true
@@ -97,6 +100,7 @@ DisableCameraShake = false
         public static bool IsCameraZoom => CameraZoom > 0f && Math.Abs(CameraZoom - 1f) > 0.001;
         public static float StartingGameTime => GetSettingValue<float>(nameof(StartingGameTime));
         public static string SplitFileLocation => GetSettingValue<string>(nameof(SplitFileLocation));
+        public static string TimerStartTransition => GetSettingValue<string>(nameof(TimerStartTransition));
 
         public static string GetHitboxColorValue(HitboxInfo.HitboxType hitboxType) {
             return GetSettingValue($"{hitboxType}Hitbox", string.Empty);

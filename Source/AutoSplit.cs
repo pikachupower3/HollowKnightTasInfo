@@ -1,4 +1,5 @@
 using Assembly_CSharp.TasInfo.mm.Source.Extensions;
+using Assembly_CSharp.TasInfo.mm.Source.Utils;
 using GlobalEnums;
 using HutongGames.PlayMaker.Actions;
 using System;
@@ -9,152 +10,55 @@ using System.Text;
 using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
-    public struct Split {
-        private string _splitTitle;
-        private float _splitTime;
-        private float _prevSplitTime;
-        private float _totalTime;
-        private SplitName _splitTrigger;
-
-
+    internal class Split {
+        private readonly string splitTitle;
+        private float splitTime;
+        private float prevSplitTime;
+        private float totalTime;
+        private readonly SplitName splitTrigger;
 
         public Split(string splitTitle, SplitName splitTrigger) {
-            _splitTitle = splitTitle;
-            _splitTime = 0f;
-            _prevSplitTime = 0f;
-            _totalTime = 0f;
-            _splitTrigger = splitTrigger;
+            this.splitTitle = splitTitle;
+            splitTime = 0f;
+            prevSplitTime = 0f;
+            totalTime = 0f;
+            this.splitTrigger = splitTrigger;
         }
-        public string SplitTitle => _splitTitle;
-        public float SplitTime => _splitTime;
-        public float TotalTime => _totalTime;
-        public SplitName SplitTrigger => _splitTrigger;
+        public string SplitTitle => splitTitle;
+        public float SplitTime => splitTime;
+        public float TotalTime => totalTime;
+        public SplitName SplitTrigger => splitTrigger;
 
         public void StartSplitTimer(float time, float prevSplitTime) {
-            _totalTime = time;
-            _prevSplitTime = prevSplitTime;
+            totalTime = time;
+            this.prevSplitTime = prevSplitTime;
         }
 
         public void IncreaseTimer(float time) {
-            _totalTime += time;
-            _splitTime = _totalTime - _prevSplitTime;
+            totalTime += time;
+            splitTime = totalTime - prevSplitTime;
         }
     }
 
-    public class SplitClass {
-        public Split Splt;
+    internal class AutoSplit : BaseTimer {
 
-        public SplitClass() {
-            Splt = new Split("", SplitName.ManualSplit);
-        }
-
-        public SplitClass(string splitTitle, SplitName splitTrigger) {
-            Splt = new Split(splitTitle, splitTrigger);
-        }
-
-        public ref Split SplitRef => ref Splt;
-
-        public ref Split GetSplitStruct() {
-            return ref Splt;
-        }
-    }
-
-    internal class AutoSplit {
-
-        private static List<string> menuingSceneNames = new List<string> { "Menu_Title", "Quit_To_Menu", "PermaDeath" };
-        private static readonly FieldInfo TeleportingFieldInfo = typeof(CameraController).GetFieldInfo("teleporting");
-        private static readonly FieldInfo TilemapDirtyFieldInfo = typeof(GameManager).GetFieldInfo("tilemapDirty");
+        private static readonly List<string> MenuingSceneNames = new() { "Menu_Title", "Quit_To_Menu", "PermaDeath" };
         private static int currentSplitIndex = 0;
         private static HollowKnightStoredData store;
-        private static bool timeStart = false;
-        private static bool timeEnd = false;
-        private static float inGameTime = 0f;
-        private static GameState lastGameState;
-        private static bool lookForTeleporting;
-        private static bool isPaused = false;
-        private static readonly int minorVersion = int.Parse(Constants.GAME_VERSION.Substring(2, 1));
         public static bool SplitLastSplit = false;
-        public static List<string> liveSplitData =  new List<string>();
+        public static readonly List<string> LiveSplitData =  new();
         private static double timeSincePause = 0f;
         private static double timeSinceResume = 0f;
-        private static bool didInit = false;
         private static bool didSplit = false;
 
-
-        private static string FormattedTime {
-            get {
-                string previousSplitFormat = null;
-                if (currentSplitIndex > 0) {
-                    ref Split previousSplit = ref SplitReader.SplitList.ElementAt(currentSplitIndex - 1).SplitRef;
-                    float previousSplitTime = previousSplit.SplitTime;
-                    string previousSplitTitle = previousSplit.SplitTitle;
-                    float previousTotalTime = previousSplit.TotalTime;
-                    if (previousSplitTime < 60) {
-                        previousSplitFormat = $"{previousSplitTitle}: {previousSplitTime.ToString("F2").PadLeft(5, '0')},";
-                    } else if (previousSplitTime < 3600) {
-                        int minute = (int)(previousSplitTime / 60);
-                        float second = previousSplitTime - minute * 60;
-                        previousSplitFormat = $"{previousSplitTitle}: {minute}:{second.ToString("F2").PadLeft(5, '0')},";
-                    } else {
-                        int hour = (int)(previousSplitTime / 3600);
-                        int minute = (int)((previousSplitTime - hour * 3600) / 60);
-                        float second = previousSplitTime - hour * 3600 - minute * 60;
-                        previousSplitFormat = $"{previousSplitTitle}: {hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')},";
-                    }
-                    if (previousTotalTime < 60) {
-                        previousSplitFormat += $" {previousTotalTime.ToString("F2").PadLeft(5, '0')}\n";
-                    } else if (previousTotalTime < 3600) {
-                        int minute = (int)(previousTotalTime / 60);
-                        float second = previousTotalTime - minute * 60;
-                        previousSplitFormat+= $" {minute}:{second.ToString("F2").PadLeft(5, '0')}\n";
-                    } else {
-                        int hour = (int)(previousSplitTime / 3600);
-                        int minute = (int)((previousSplitTime - hour * 3600) / 60);
-                        float second = previousSplitTime - hour * 3600 - minute * 60;
-                        previousSplitFormat += $" {hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')}\n";
-                    }
-                }
-                ref Split currentSplit = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-                float splitTime = currentSplit.SplitTime;
-                string splitTitle = currentSplit.SplitTitle;
-                float splitTotalTime = currentSplit.TotalTime;
-                string formattedSplits;
-                if (splitTime < 60) {
-                    formattedSplits = $"{previousSplitFormat}{splitTitle}: {splitTime.ToString("F2").PadLeft(5, '0')},";
-                } else if (splitTime < 3600) {
-                    int minute = (int)(splitTime / 60);
-                    float second = splitTime - minute * 60;
-                    formattedSplits = $"{previousSplitFormat}{splitTitle}: {minute}:{second.ToString("F2").PadLeft(5, '0')},";
-                } else {
-                    int hour = (int)(splitTime / 3600);
-                    int minute = (int)((splitTime - hour * 3600) / 60);
-                    float second = splitTime - hour * 3600 - minute * 60;
-                    formattedSplits = $"{previousSplitFormat}{splitTitle}: {hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')},";
-                }
-                if (splitTotalTime == 0) {
-                    return string.Empty;
-                } else if (splitTotalTime < 60) {
-                    return $"{formattedSplits} {splitTotalTime.ToString("F2").PadLeft(5, '0')}\n";
-                } else if (splitTime < 3600) {
-                    int minute = (int)(splitTotalTime / 60);
-                    float second = splitTotalTime - minute * 60;
-                    return $"{formattedSplits} {minute}:{second.ToString("F2").PadLeft(5, '0')}\n";
-                } else {
-                    int hour = (int)(splitTotalTime / 3600);
-                    int minute = (int)((splitTotalTime - hour * 3600) / 60);
-                    float second = splitTotalTime - hour * 3600 - minute * 60;
-                    return $"{formattedSplits} {hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')}";
-                }
-            }
-        }
 
         private static bool ShouldSplitTransition(string nextScene, string sceneName) {
             if (nextScene != sceneName) {
                 return !(
                     string.IsNullOrEmpty(sceneName) ||
                     string.IsNullOrEmpty(nextScene) ||
-                    menuingSceneNames.Contains(sceneName) ||
-                    menuingSceneNames.Contains(nextScene)
+                    MenuingSceneNames.Contains(sceneName) ||
+                    MenuingSceneNames.Contains(nextScene)
                 );
             }
             return false;
@@ -2024,7 +1928,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     shouldSplit = ShouldSplitTransition(nextScene, sceneName);
                     break;
                 case SplitName.RandoWake:
-                    shouldSplit = gameManager.playerData.disablePause && gameManager.gameState == GameState.PLAYING && !menuingSceneNames.Contains(sceneName);
+                    shouldSplit = gameManager.playerData.disablePause && gameManager.gameState == GameState.PLAYING && !MenuingSceneNames.Contains(sceneName);
                     break;
                 case SplitName.RidingStag:
                     shouldSplit = gameManager.playerData.travelling;
@@ -2837,104 +2741,60 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             store = new HollowKnightStoredData(gameManager);
         }
 
-        public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        public new static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             if (!SplitReader.ReadSplits) {
                 return;
             }
 
-            string currentScene = gameManager.sceneName;
-            string nextScene = gameManager.nextSceneName;
-            GameState gameState = gameManager.gameState;
+            BaseTimer.OnPreRender(gameManager, infoBuilder);
 
-            if (Input.GetKeyDown(KeyCode.P)) {
-                isPaused = !isPaused;
-            }
-
-            if (!timeStart && (nextScene.Equals("Tutorial_01", StringComparison.OrdinalIgnoreCase) && gameState == GameState.ENTERING_LEVEL ||
-                               nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene" ||
-                               HeroController.instance != null)) {
-                timeStart = true;
-                liveSplitData.Add(timeSinceResume.ToString() + "Init");
-                timeSinceResume = 0f;
-                ref Split refSplit = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-                refSplit.StartSplitTimer(inGameTime, 0f);
-            }
-
-            if (timeStart && !timeEnd && (nextScene.StartsWith("Cinematic_Ending", StringComparison.OrdinalIgnoreCase) ||
-                                          nextScene == "GG_End_Sequence") || SplitLastSplit) {
-                timeEnd = true;
-            }
-
-            bool timePaused = false;
-
-            // thanks ShootMe, in game time logic copy from https://github.com/ShootMe/LiveSplit.HollowKnight
-            try {
-                UIState uiState = gameManager.ui.uiState;
-                bool loadingMenu = currentScene != "Menu_Title" && string.IsNullOrEmpty(nextScene) ||
-                                   currentScene != "Menu_Title" && nextScene == "Menu_Title";
-                if (gameState == GameState.PLAYING && lastGameState == GameState.MAIN_MENU) {
-                    lookForTeleporting = true;
-                }
-
-                bool teleporting = (bool)TeleportingFieldInfo.GetValue(gameManager.cameraCtrl);
-                if (lookForTeleporting && (teleporting || gameState != GameState.PLAYING && gameState != GameState.ENTERING_LEVEL)) {
-                    lookForTeleporting = false;
-                }
-
-                timePaused =
-                    gameState == GameState.PLAYING && teleporting && gameManager.hero_ctrl?.cState.hazardRespawning == false
-                    || lookForTeleporting
-                    || gameState is GameState.PLAYING or GameState.ENTERING_LEVEL && uiState != UIState.PLAYING
-                    || gameState != GameState.PLAYING && !gameManager.inputHandler.acceptingInput
-                    || gameState is GameState.EXITING_LEVEL or GameState.LOADING
-                    || gameManager.hero_ctrl?.transitionState == HeroTransitionState.WAITING_TO_ENTER_LEVEL
-                    || uiState != UIState.PLAYING &&
-                    (loadingMenu || uiState != UIState.PAUSED && (!string.IsNullOrEmpty(nextScene) || currentScene == "_test_charms")) &&
-                    nextScene != currentScene
-                    || minorVersion < 3 && (bool)TilemapDirtyFieldInfo.GetValue(gameManager)
-                    || ConfigManager.PauseTimer
-                    || isPaused;
-            } catch {
-                // ignore
-            }
-
-            lastGameState = gameState;
-            ref Split splitRef = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
+            Split splitRef = SplitReader.SplitList.ElementAt(currentSplitIndex);
 
             if (timeStart && !timePaused && !timeEnd) {
                 if (timeSinceResume == 0f && !didSplit) {
-                    liveSplitData.Add(timeSincePause.ToString() + "Resume");;
+                    LiveSplitData.Add(timeSincePause.ToString() + "Resume");;
                     timeSincePause = 0f;
                 }
-                inGameTime += Time.unscaledDeltaTime;
                 splitRef.IncreaseTimer(Time.unscaledDeltaTime);
                 timeSinceResume += Time.unscaledDeltaTime;
             }
             if (timeStart && timePaused && !timeEnd) {
-                if (timeSincePause == 0f && inGameTime != 0) {
-                    liveSplitData.Add(timeSinceResume.ToString() + "Pause");
+                if (timeSincePause == 0f && InGameTime != 0) {
+                    LiveSplitData.Add(timeSinceResume.ToString() + "Pause");
                     timeSinceResume = 0f;
                 }
                 didSplit = false;
                 timeSincePause += Time.unscaledDeltaTime;
             }
-            if (!didInit) {
-                timeSincePause += Time.unscaledDeltaTime;
-            }
             if (!SplitLastSplit && CheckSplit(gameManager, splitRef.SplitTrigger, gameManager.nextSceneName, gameManager.sceneName)) {
                 if (currentSplitIndex < SplitReader.SplitList.Count-1) {
                     currentSplitIndex++;
-                    ref Split newSplitRef = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-                    newSplitRef.StartSplitTimer(inGameTime, splitRef.TotalTime);
+                    Split newSplit = SplitReader.SplitList.ElementAt(currentSplitIndex);
+                    newSplit.StartSplitTimer(InGameTime, splitRef.TotalTime);
                 } else {
                     SplitLastSplit = true;
                 }
-                liveSplitData.Add(timeSincePause.ToString() + "Split");
+                LiveSplitData.Add(timeSincePause.ToString() + "Split");
                 timeSincePause = 0f;
                 didSplit = true;
             }
-            if (inGameTime > 0 && ConfigManager.ShowSplits) {
-                infoBuilder.AppendLine(FormattedTime);
+
+            List<string> result = new();
+
+            if (InGameTime > 0 && ConfigManager.ShowSplits) {
+                result.Add(SplitReader.SplitList.ElementAt(currentSplitIndex).SplitTitle + ": " + 
+                    FormattedTime(SplitReader.SplitList.ElementAt(currentSplitIndex).SplitTime) + " " +
+                    FormattedTime(SplitReader.SplitList.ElementAt(currentSplitIndex).TotalTime));
+                if (currentSplitIndex > 0) {
+                    result.Add(SplitReader.SplitList.ElementAt(currentSplitIndex - 1).SplitTitle + ": " +
+                    FormattedTime(SplitReader.SplitList.ElementAt(currentSplitIndex - 1).SplitTime) + " " +
+                    FormattedTime(SplitReader.SplitList.ElementAt(currentSplitIndex - 1).TotalTime));
+                }
+            }
+
+            string resultString = StringUtils.Join("\n", result);
+            if (!string.IsNullOrEmpty(resultString)) {
+                infoBuilder.AppendLine(resultString);
             }
         }
     }

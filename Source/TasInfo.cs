@@ -25,7 +25,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             StringBuilder infoBuilder = new();
 
             if (Input.GetKeyDown(KeyCode.Q)) {
-                LiveSplitWrite.WriteTest(AutoSplit.liveSplitData);
+                LiveSplitWrite.WriteTest(AutoSplit.LiveSplitData);
             }
 
             try {
