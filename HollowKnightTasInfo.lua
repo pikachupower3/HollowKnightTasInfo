@@ -1,11 +1,3 @@
-local gameVersion
-local markAddresses = {
-    v1028 = { 0x400000 + 0x1B1CF60, 0x400, 0x18, 0x20, 0xF78 },
-    v1221 = { 0x400000 + 0x1B1CF60, 0x400, 0x18, 0x20, 0xF38 },
-    v1432_mod = { 0x400000 + 0x2121D18, 0x0, 0x40, 0x4A0, 0x48, 0xA0, 0x68 },
-    v1432 = { 0x400000 + 0x21047C0, 0xF8, 0x80, 0x60, 0x20, 0xA0, 0x238, 0xF48}
-}
-
 function onPaint()
     local infoAddress = getInfoAddress()
 
@@ -68,29 +60,18 @@ function splitString(text, sep)
 end
 
 function getInfoAddress()
-    if gameVersion == nil then
-        for k, v in pairs(markAddresses) do
-            if getPointerAddress(v) == 1234567890123456789 then
-                gameVersion = k;
-                v[#v] = v[#v] + 0x8
-            end
+    -- This is the hard-coded addr that our patched GameManager will try to mmap.
+    -- It SHOULD work based on some statistics I did on HK's memory maps over a
+    -- bunch of restarts, but if the game is being super unstable or whatever, maybe
+    -- restart it.
+    local tasInfoMap = 0x7f0000001000
+    mapMarker = memory.readu64(tasInfoMap)
+    if mapMarker == 0x1234567812345678 then
+        tasInfoMarkerAddress = memory.readu64(tasInfoMap + 8)
+        if memory.readu64(tasInfoMarkerAddress) == 1234567890123456789 then
+            return memory.readu64(tasInfoMarkerAddress + 8)
         end
-    end
-
-    if gameVersion ~= nil then
-        return getPointerAddress(markAddresses[gameVersion])
     end
 
     return 0;
-end
-
-function getPointerAddress(offsets)
-    local address = 0
-    for i, v in ipairs(offsets) do
-        address = memory.readu64(address + v)
-        if address == 0 then
-            return 0
-        end
-    end
-    return address
 end
