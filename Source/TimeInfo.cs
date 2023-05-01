@@ -9,8 +9,10 @@ using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
     internal class TimeInfo : BaseTimer {
+        private protected static float InGameTime { get; private set; } = 0f;
         public new static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
-            BaseTimer.OnPreRender(gameManager, infoBuilder);
+
+            InGameTime += (float)BaseTimer.OnPreRender(gameManager, infoBuilder);
 
             List<string> result = new();
             if (!string.IsNullOrEmpty(gameManager.sceneName) && ConfigManager.ShowSceneName) {

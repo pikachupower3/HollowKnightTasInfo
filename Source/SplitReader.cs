@@ -45,8 +45,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 }
             }
 
-            foreach (Split splitClass in SplitList) {
-                Console.WriteLine(splitClass.SplitTitle + " " + splitClass.SplitTrigger);
+            for (int i = 0; i < SplitList.Count; i++) {
+                Console.WriteLine(i + " " + SplitList.ElementAt(i).SplitTitle + " " + SplitList.ElementAt(i).SplitTrigger);
             }
         }
     }

@@ -39,6 +39,14 @@ GiveLantern = false
 StartingGameTime = 0
 PauseTimer = false
 
+# Send a T input to add all,
+# Y for Soul, U for Geo, I for Essence, O for Masks, P for LifeBlood
+AddSoul = 0
+AddGeo = 0
+AddEssence = 0
+AddMasks = 0
+AddLifeBlood = 0
+
 # 碰撞箱颜色 ARGB 格式，注释或删除则不显示该类 hitbox
 KnightHitbox = 0xFF00FF00
 AttackHitbox = 0xFF00FFFF
@@ -101,6 +109,11 @@ DisableCameraShake = false
         public static float StartingGameTime => GetSettingValue<float>(nameof(StartingGameTime));
         public static string SplitFileLocation => GetSettingValue<string>(nameof(SplitFileLocation));
         public static string TimerStartTransition => GetSettingValue<string>(nameof(TimerStartTransition));
+        public static int AddSoul => GetSettingValue<int>(nameof(AddSoul));
+        public static int AddGeo => GetSettingValue<int>(nameof(AddGeo));
+        public static int AddEssence => GetSettingValue<int>(nameof(AddEssence));
+        public static int AddMasks => GetSettingValue<int>(nameof(AddMasks));
+        public static int AddLifeBlood => GetSettingValue<int>(nameof(AddLifeBlood));
 
         public static string GetHitboxColorValue(HitboxInfo.HitboxType hitboxType) {
             return GetSettingValue($"{hitboxType}Hitbox", string.Empty);

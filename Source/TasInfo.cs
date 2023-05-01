@@ -1,4 +1,6 @@
 using HutongGames.Utility;
+using HutongGames.PlayMaker;
+using HutongGames.PlayMaker.Actions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -87,6 +89,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             // 放第二位，先处理镜头之后 camera.WorldToScreenPoint 才能获得正确数据
             CameraManager.OnPreRender(gameManager);
+            AddToPlayerData.OnPreRender(gameManager);
             HeroInfo.OnPreRender(gameManager, infoBuilder);
             CustomInfo.OnPreRender(gameManager, infoBuilder);
             AutoSplit.OnPreRender(gameManager, infoBuilder);

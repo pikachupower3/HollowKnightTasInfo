@@ -15,7 +15,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private protected static bool timeStart = false;
         private protected static bool timeEnd = false;
         private protected static bool timePaused = false;
-        private protected static float InGameTime { get; private set; } = 0f;
         private static readonly int MinorVersion = int.Parse(Constants.GAME_VERSION.Substring(2, 1));
 
         private protected static string FormattedTime(float time) {
@@ -39,7 +38,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static bool lookForTeleporting;
         private static bool isPaused = false;
 
-        private protected static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        private protected static double OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             string currentScene = gameManager.sceneName;
             string nextScene = gameManager.nextSceneName;
             GameState gameState = gameManager.gameState;
@@ -48,13 +47,15 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 isPaused = !isPaused;
             }
 
+            double retTime = 0d;
+
             if (!timeStart && (!string.IsNullOrEmpty(ConfigManager.TimerStartTransition) && nextScene.Equals(ConfigManager.TimerStartTransition) ||
                                (string.IsNullOrEmpty(ConfigManager.TimerStartTransition) && 
                                (nextScene.Equals("Tutorial_01", StringComparison.OrdinalIgnoreCase) && gameState == GameState.ENTERING_LEVEL ||
                                nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene" ||
                                HeroController.instance != null)))) {
                 timeStart = true;
-                InGameTime = ConfigManager.StartingGameTime;
+                retTime = ConfigManager.StartingGameTime;
             }
 
             if (timeStart && !timeEnd && (nextScene.StartsWith("Cinematic_Ending", StringComparison.OrdinalIgnoreCase) ||
@@ -98,8 +99,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             lastGameState = gameState;
 
             if (timeStart && !timePaused && !timeEnd) {
-                InGameTime += Time.unscaledDeltaTime;
+                retTime += Time.unscaledDeltaTime;
             }
+
+            return retTime;
         }
     }
 }
