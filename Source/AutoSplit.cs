@@ -1,4 +1,5 @@
 using Assembly_CSharp.TasInfo.mm.Source.Extensions;
+using Assembly_CSharp.TasInfo.mm.Source.Utils;
 using GlobalEnums;
 using HutongGames.PlayMaker.Actions;
 using System;
@@ -9,143 +10,55 @@ using System.Text;
 using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
-    public struct Split {
-        private string _splitTitle;
-        private float _splitTime;
-        private float _totalTime;
-        private SplitName _splitTrigger;
-
-
+    internal class Split {
+        private readonly string splitTitle;
+        private float splitTime;
+        private float prevSplitTime;
+        private float totalTime;
+        private readonly SplitName splitTrigger;
 
         public Split(string splitTitle, SplitName splitTrigger) {
-            _splitTitle = splitTitle;
-            _splitTime = 0f;
-            _totalTime = 0f;
-            _splitTrigger = splitTrigger;
+            this.splitTitle = splitTitle;
+            splitTime = 0f;
+            prevSplitTime = 0f;
+            totalTime = 0f;
+            this.splitTrigger = splitTrigger;
         }
-        public string SplitTitle => _splitTitle;
-        public float SplitTime => _splitTime;
-        public float TotalTime => _totalTime;
-        public SplitName SplitTrigger => _splitTrigger;
+        public string SplitTitle => splitTitle;
+        public float SplitTime => splitTime;
+        public float TotalTime => totalTime;
+        public SplitName SplitTrigger => splitTrigger;
 
-        public void StartSplitTimer(float time) {
-            _totalTime = time;
+        public void StartSplitTimer(float time, float prevSplitTime) {
+            totalTime = time;
+            this.prevSplitTime = prevSplitTime;
         }
 
         public void IncreaseTimer(float time) {
-            _splitTime += time;
-            _totalTime += time;
+            totalTime += time;
+            splitTime = totalTime - prevSplitTime;
         }
     }
 
-    public class SplitClass {
-        public Split Splt;
+    internal class AutoSplit : BaseTimer {
 
-        public SplitClass() {
-            Splt = new Split("", SplitName.ManualSplit);
-        }
-
-        public SplitClass(string splitTitle, SplitName splitTrigger) {
-            Splt = new Split(splitTitle, splitTrigger);
-        }
-
-        public ref Split SplitRef => ref Splt;
-
-        public ref Split GetSplitStruct() {
-            return ref Splt;
-        }
-    }
-
-    internal class AutoSplit {
-
-        private static List<string> menuingSceneNames = new List<string> { "Menu_Title", "Quit_To_Menu", "PermaDeath" };
-        private static readonly FieldInfo TeleportingFieldInfo = typeof(CameraController).GetFieldInfo("teleporting");
-        private static readonly FieldInfo TilemapDirtyFieldInfo = typeof(GameManager).GetFieldInfo("tilemapDirty");
+        private static readonly List<string> MenuingSceneNames = new() { "Menu_Title", "Quit_To_Menu", "PermaDeath" };
         private static int currentSplitIndex = 0;
         private static HollowKnightStoredData store;
-        private static bool timeStart = false;
-        private static bool timeEnd = false;
-        private static float inGameTime = 0f;
-        private static GameState lastGameState;
-        private static bool lookForTeleporting;
-        private static bool isPaused = false;
-        private static readonly int minorVersion = int.Parse(Constants.GAME_VERSION.Substring(2, 1));
         public static bool SplitLastSplit = false;
+        public static readonly List<string> LiveSplitData =  new();
+        private static double timeSincePause = 0f;
+        private static double timeSinceResume = 0f;
+        private static bool didSplit = false;
 
-        private static string FormattedTime {
-            get {
-                string previousSplitFormat = null;
-                if (currentSplitIndex > 0) {
-                    ref Split previousSplit = ref SplitReader.SplitList.ElementAt(currentSplitIndex - 1).SplitRef;
-                    float previousSplitTime = previousSplit.SplitTime;
-                    string previousSplitTitle = previousSplit.SplitTitle;
-                    float previousTotalTime = previousSplit.TotalTime;
-                    if (previousSplitTime < 60) {
-                        previousSplitFormat = $"{previousSplitTitle}: {previousSplitTime.ToString("F2").PadLeft(5, '0')},";
-                    } else if (previousSplitTime < 3600) {
-                        int minute = (int)(previousSplitTime / 60);
-                        float second = previousSplitTime - minute * 60;
-                        previousSplitFormat = $"{previousSplitTitle}: {minute}:{second.ToString("F2").PadLeft(5, '0')},";
-                    } else {
-                        int hour = (int)(previousSplitTime / 3600);
-                        int minute = (int)((previousSplitTime - hour * 3600) / 60);
-                        float second = previousSplitTime - hour * 3600 - minute * 60;
-                        previousSplitFormat = $"{previousSplitTitle}: {hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')},";
-                    }
-                    if (previousTotalTime < 60) {
-                        previousSplitFormat += $" {previousTotalTime.ToString("F2").PadLeft(5, '0')}\n";
-                    } else if (previousTotalTime < 3600) {
-                        int minute = (int)(previousTotalTime / 60);
-                        float second = previousTotalTime - minute * 60;
-                        previousSplitFormat+= $" {minute}:{second.ToString("F2").PadLeft(5, '0')}\n";
-                    } else {
-                        int hour = (int)(previousSplitTime / 3600);
-                        int minute = (int)((previousSplitTime - hour * 3600) / 60);
-                        float second = previousSplitTime - hour * 3600 - minute * 60;
-                        previousSplitFormat += $" {hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')}\n";
-                    }
-                }
-                ref Split currentSplit = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-                float splitTime = currentSplit.SplitTime;
-                string splitTitle = currentSplit.SplitTitle;
-                float splitTotalTime = currentSplit.TotalTime;
-                string formattedSplits;
-                if (splitTime < 60) {
-                    formattedSplits = $"{previousSplitFormat}{splitTitle}: {splitTime.ToString("F2").PadLeft(5, '0')},";
-                } else if (splitTime < 3600) {
-                    int minute = (int)(splitTime / 60);
-                    float second = splitTime - minute * 60;
-                    formattedSplits = $"{previousSplitFormat}{splitTitle}: {minute}:{second.ToString("F2").PadLeft(5, '0')},";
-                } else {
-                    int hour = (int)(splitTime / 3600);
-                    int minute = (int)((splitTime - hour * 3600) / 60);
-                    float second = splitTime - hour * 3600 - minute * 60;
-                    formattedSplits = $"{previousSplitFormat}{splitTitle}: {hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')},";
-                }
-                if (splitTotalTime == 0) {
-                    return string.Empty;
-                } else if (splitTotalTime < 60) {
-                    return $"{formattedSplits} {splitTotalTime.ToString("F2").PadLeft(5, '0')}\n";
-                } else if (splitTime < 3600) {
-                    int minute = (int)(splitTotalTime / 60);
-                    float second = splitTotalTime - minute * 60;
-                    return $"{formattedSplits} {minute}:{second.ToString("F2").PadLeft(5, '0')}\n";
-                } else {
-                    int hour = (int)(splitTotalTime / 3600);
-                    int minute = (int)((splitTotalTime - hour * 3600) / 60);
-                    float second = splitTotalTime - hour * 3600 - minute * 60;
-                    return $"{formattedSplits} {hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')}";
-                }
-            }
-        }
 
         private static bool ShouldSplitTransition(string nextScene, string sceneName) {
             if (nextScene != sceneName) {
                 return !(
                     string.IsNullOrEmpty(sceneName) ||
                     string.IsNullOrEmpty(nextScene) ||
-                    menuingSceneNames.Contains(sceneName) ||
-                    menuingSceneNames.Contains(nextScene)
+                    MenuingSceneNames.Contains(sceneName) ||
+                    MenuingSceneNames.Contains(nextScene)
                 );
             }
             return false;
@@ -183,7 +96,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.BrettaRescued:
                     shouldSplit = gameManager.playerData.brettaRescued;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.BrummFlame:
                     shouldSplit = gameManager.playerData.gotBrummsFlame;
                     break;
@@ -278,7 +191,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.DreamNail2:
                     shouldSplit = gameManager.playerData.dreamNailUpgraded;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.DreamGate:
                     shouldSplit = gameManager.playerData.hasDreamGate;
                     break;
@@ -378,7 +291,16 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.GreenpathStation:
                     shouldSplit = gameManager.playerData.openedGreenpath;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+                case SplitName.GrubberflysElegy:
+                    shouldSplit = gameManager.playerData.gotCharm_35;
+                    break;
+                case SplitName.Grubsong:
+                    shouldSplit = gameManager.playerData.gotCharm_3;
+                    break;
+                case SplitName.GreatHopper:
+                    shouldSplit = gameManager.playerData.killedGiantHopper;
+                    break;
+#if v1221 || v1432
                 case SplitName.Grimmchild:
                     shouldSplit = gameManager.playerData.gotCharm_40;
                     break;
@@ -391,19 +313,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.Grimmchild4:
                     shouldSplit = gameManager.playerData.grimmChildLevel == 4;
                     break;
-#endif
-                case SplitName.GrubberflysElegy:
-                    shouldSplit = gameManager.playerData.gotCharm_35;
-                    break;
-                case SplitName.Grubsong:
-                    shouldSplit = gameManager.playerData.gotCharm_3;
-                    break;
-                case SplitName.GreatHopper:
-                    shouldSplit = gameManager.playerData.killedGiantHopper;
-                    break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
                 case SplitName.GreyPrince:
                     shouldSplit = gameManager.playerData.killedGreyPrince;
+                    break;
+                case SplitName.HiddenStationStation:
+                    shouldSplit = gameManager.playerData.openedHiddenStation;
                     break;
 #endif
                 case SplitName.GruzMother:
@@ -418,11 +332,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.HegemolDreamer:
                     shouldSplit = gameManager.playerData.hegemolDefeated;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
-                case SplitName.HiddenStationStation:
-                    shouldSplit = gameManager.playerData.openedHiddenStation;
-                    break;
-#endif
                 case SplitName.Hive:
                     shouldSplit = gameManager.playerData.visitedHive;
                     break;
@@ -634,7 +543,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.NailUpgrade4:
                     shouldSplit = gameManager.playerData.nailSmithUpgrades == 4;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.NightmareKingGrimm:
                     shouldSplit = gameManager.playerData.killedNightmareGrimm;
                     break;
@@ -691,11 +600,13 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.Pantheon5:
                     shouldSplit = gameManager.playerData.bossDoorStateTier5.completed;
                     break;
-                case SplitName.PathOfPain:
-                    shouldSplit = gameManager.playerData.newDataBindingSeal;
-                    break;
                 case SplitName.PureVessel:
                     shouldSplit = gameManager.playerData.killedHollowKnightPrime;
+                    break;
+#endif
+#if v1221 || v1432
+                case SplitName.PathOfPain:
+                    shouldSplit = gameManager.playerData.newDataBindingSeal;
                     break;
 #endif
                 case SplitName.QueensGardens:
@@ -780,7 +691,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.SpiritGladeOpen:
                     shouldSplit = gameManager.playerData.gladeDoorOpened;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.Sprintmaster:
                     shouldSplit = gameManager.playerData.gotCharm_37;
                     break;
@@ -811,7 +722,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.TramPass:
                     shouldSplit = gameManager.playerData.hasTramPass;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.TroupeMasterGrimm:
                     shouldSplit = gameManager.playerData.killedGrimm;
                     break;
@@ -876,14 +787,14 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.WaywardCompass:
                     shouldSplit = gameManager.playerData.gotCharm_2;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.Weaversong:
                     shouldSplit = gameManager.playerData.gotCharm_39;
                     break;
-#endif
                 case SplitName.WhiteDefender:
                     shouldSplit = gameManager.playerData.killedWhiteDefender;
                     break;
+#endif
                 case SplitName.WhitePalace:
                     shouldSplit = gameManager.playerData.visitedWhitePalace;
                     break;
@@ -899,7 +810,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.ZoteKilled:
                     shouldSplit = gameManager.playerData.killedZote;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.Flame1:
                     shouldSplit = gameManager.playerData.flamesCollected == 1;
                     break;
@@ -1357,7 +1268,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.Essence2400:
                     shouldSplit = gameManager.playerData.dreamOrbs >= 2400;
                     break;
-
+                    // 1:10.46
                 case SplitName.KingsPass:
                     shouldSplit = sceneName.StartsWith("Tutorial_01") && nextScene.StartsWith("Town");
                     break;
@@ -1687,7 +1598,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.WaterwaysManhole:
                     shouldSplit = gameManager.playerData.openedWaterwaysManhole;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.NotchGrimm:
                     shouldSplit = gameManager.playerData.gotGrimmNotch;
                     break;
@@ -1755,7 +1666,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.EnterGodhome:
                     shouldSplit = nextScene.StartsWith("GG_Atrium") && nextScene != sceneName;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.DgateKingdomsEdgeAcid:
                     shouldSplit =
                         gameManager.playerData.dreamGateScene.StartsWith("Deepnest_East_04") &&
@@ -1793,13 +1704,14 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.LostKinEssence:
                     shouldSplit = gameManager.playerData.infectedKnightOrbsCollected;
                     break;
+#if v1221 || v1432
                 case SplitName.WhiteDefenderEssence:
                     shouldSplit = gameManager.playerData.whiteDefenderOrbsCollected;
                     break;
                 case SplitName.GreyPrinceEssence:
                     shouldSplit = gameManager.playerData.greyPrinceOrbsCollected;
                     break;
-
+#endif
                 case SplitName.PreGrimmShop:
                     shouldSplit = gameManager.playerData.hasLantern
                         && gameManager.playerData.maxHealthBase == 6
@@ -1928,15 +1840,16 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.ShadeKilled:
                     shouldSplit = store.CheckToggledFalse(Offset.soulLimited, gameManager.playerData.soulLimited);
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
                 case SplitName.SlyShopFinished:
                     shouldSplit =
                         gameManager.playerData.vesselFragments == 8 || (gameManager.playerData.MPReserveMax == 66
                         && gameManager.playerData.vesselFragments == 2)
                         && !sceneName.StartsWith("Room_shop")
-                        && gameManager.playerData.gotCharm_37;
-                    break;
+#if v1221 || v1432
+                        && gameManager.playerData.gotCharm_37
 #endif
+                        ;
+                    break;
                 case SplitName.ElegantKeyShoptimised:
                     shouldSplit = gameManager.playerData.maxHealthBase == 5 && gameManager.playerData.heartPieces == 1
                         && gameManager.playerData.hasWhiteKey;
@@ -1959,7 +1872,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         gameManager.playerData.brokenCharm_24 &&
                         gameManager.playerData.brokenCharm_25;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.AllUnbreakables:
                     shouldSplit = gameManager.playerData.fragileGreed_unbreakable &&
                         gameManager.playerData.fragileHealth_unbreakable &&
@@ -2041,7 +1954,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     shouldSplit = ShouldSplitTransition(nextScene, sceneName);
                     break;
                 case SplitName.RandoWake:
-                    shouldSplit = gameManager.playerData.disablePause && gameManager.gameState == GameState.PLAYING && !menuingSceneNames.Contains(sceneName);
+                    shouldSplit = gameManager.playerData.disablePause && gameManager.gameState == GameState.PLAYING && !MenuingSceneNames.Contains(sceneName);
                     break;
                 case SplitName.RidingStag:
                     shouldSplit = gameManager.playerData.travelling;
@@ -2190,13 +2103,14 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.OnObtainWhiteFragment:
                     shouldSplit = store.CheckIncreased(Offset.royalCharmState, gameManager.playerData.royalCharmState);
                     break;
+#if v1221 || v1432
                 case SplitName.OnDefeatGPZ:
                     shouldSplit = store.CheckIncremented(Offset.greyPrinceDefeats, gameManager.playerData.greyPrinceDefeats);
                     break;
                 case SplitName.OnDefeatWhiteDefender:
                     shouldSplit = store.CheckIncremented(Offset.whiteDefenderDefeats, gameManager.playerData.whiteDefenderDefeats);
                     break;
-
+#endif
                 case SplitName.FlowerRewardGiven:
                     shouldSplit = gameManager.playerData.xunRewardGiven;
                     break;
@@ -2249,7 +2163,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 case SplitName.EnterBroodingMawlek:
                     shouldSplit = nextScene.StartsWith("Crossroads_09") && nextScene != sceneName;
                     break;
-#if !(V1028_KRYTHOM || V1028 || V1037)
+#if v1221 || v1432
                 case SplitName.EnterTMG:
                     shouldSplit = nextScene.StartsWith("Grimm_Main_Tent") && nextScene != sceneName
                     && gameManager.playerData.grimmChildLevel == 2
@@ -2296,7 +2210,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     break;
 
 
-#region Trial of the Warrior
+                #region Trial of the Warrior
                 case SplitName.Bronze1a: // 1 × Shielded Fool
                     shouldSplit = store.killsColShieldStart - gameManager.playerData.killsColShield == 1;
                     shouldSkip = gameManager.playerData.killsColShield == 0 || store.killsColShieldStart - gameManager.playerData.killsColShield > 1;
@@ -2383,9 +2297,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         sceneName.StartsWith("Room_Colosseum_Bronze") &&
                         nextScene != sceneName;
                     break;
-#endregion
+                #endregion
 
-#region Trial of the Conqueror
+                #region Trial of the Conqueror
                 case SplitName.Silver1: // 2 × Heavy Fool, 3 × Winged Fool
                     shouldSplit =
                         store.killsColWormStart - gameManager.playerData.killsColWorm == 2 &&
@@ -2533,11 +2447,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         sceneName.StartsWith("Room_Colosseum_Silver") &&
                         nextScene != sceneName;
                     break;
-#endregion
+                #endregion
 
-#region Trial of the Fool
+                #region Trial of the Fool
                 case SplitName.Gold1:
-#region
+                    #region
                     shouldSplit =
                         store.killsColWormStart - gameManager.playerData.killsColWorm == 1 &&  // 1 Heavy Fool
                         store.killsColMinerStart - gameManager.playerData.killsColMiner == 1 &&  // 1 Sturdy Fool
@@ -2562,10 +2476,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry > 2 ||
                         store.killsColRollerStart - gameManager.playerData.killsColRoller > 2;
                     break;
-#endregion
+                #endregion
                 // Wave 2 splits inconsistently since the enemies are killed by the spikes on the floor automatically
                 case SplitName.Gold3:
-#region
+                    #region
                     shouldSplit =
                         store.killsBlobbleStart - gameManager.playerData.killsBlobble == 3 &&  // 3 Obble
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry == 3 &&  // 1 Winged Fool
@@ -2578,9 +2492,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry > 3 ||
                         store.killsAngryBuzzerStart - gameManager.playerData.killsAngryBuzzer > 2;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold4:
-#region
+                    #region
                     shouldSplit =
                         store.killsColWormStart - gameManager.playerData.killsColWorm == 3 &&  // 2 Heavy Fool
                         store.killsCeilingDropperStart - gameManager.playerData.killsCeilingDropper == 6;    // 6 Belflies
@@ -2590,36 +2504,36 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsColWormStart - gameManager.playerData.killsColWorm > 3 ||
                         store.killsCeilingDropperStart - gameManager.playerData.killsCeilingDropper > 6;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold5:
-#region
+                    #region
                     shouldSplit =
                         store.killsColHopperStart - gameManager.playerData.killsColHopper == 3;    // 3 Loodle
                     shouldSkip =
                         gameManager.playerData.killsColHopper == 0 ||
                         store.killsColHopperStart - gameManager.playerData.killsColHopper > 3;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold6:
-#region
+                    #region
                     shouldSplit =
                         store.killsColHopperStart - gameManager.playerData.killsColHopper == 8;    // 5 Loodle
                     shouldSkip =
                         gameManager.playerData.killsColHopper == 0 ||
                         store.killsColHopperStart - gameManager.playerData.killsColHopper > 8;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold7:
-#region
+                    #region
                     shouldSplit =
                         store.killsColHopperStart - gameManager.playerData.killsColHopper == 11;   // 3 Loodle
                     shouldSkip =
                         gameManager.playerData.killsColHopper == 0 ||
                         store.killsColHopperStart - gameManager.playerData.killsColHopper > 11;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold8a:
-#region
+                    #region
                     shouldSplit =
                         store.killsColMosquitoStart - gameManager.playerData.killsColMosquito == 4 &&  // 2 Squit
                         store.killsSpitterStart - gameManager.playerData.killsSpitter == 5 &&  // 3 Aspid
@@ -2632,9 +2546,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsSpitterStart - gameManager.playerData.killsSpitter > 5 ||
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry > 4;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold8:
-#region
+                    #region
                     shouldSplit =
                         store.killsColMosquitoStart - gameManager.playerData.killsColMosquito == 6 &&  // 2 Squit
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry == 5;    // 1 Winged Fool
@@ -2644,9 +2558,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsColMosquitoStart - gameManager.playerData.killsColMosquito > 6 ||
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry > 5;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold9a:
-#region
+                    #region
                     shouldSplit =
                         store.killsColShieldStart - gameManager.playerData.killsColShield == 3 &&  // 1 Shielded Fool
                         store.killsColWormStart - gameManager.playerData.killsColWorm == 5 &&  // 2 Heavy Fool
@@ -2665,18 +2579,18 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsHeavyMantisStart - gameManager.playerData.killsHeavyMantis > 2 ||
                         store.killsHeavyMantisFlyerStart - gameManager.playerData.killsMantisHeavyFlyer > 4;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold9b:
-#region
+                    #region
                     shouldSplit =
                         store.killsMageKnightStart - gameManager.playerData.killsMageKnight == 1;    // 1 Soul Warrior
                     shouldSkip =
                         gameManager.playerData.killsMageKnight == 0 ||
                         store.killsMageKnightStart - gameManager.playerData.killsMageKnight > 1;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold10:
-#region
+                    #region
                     shouldSplit =
                         store.killsElectricMageStart - gameManager.playerData.killsElectricMage == 3 &&  // 3 Volt Twister
                         store.killsMageStart - gameManager.playerData.killsMage == 4;    // 2 Soul Twister
@@ -2686,9 +2600,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsElectricMageStart - gameManager.playerData.killsElectricMage > 3 ||
                         store.killsMageStart - gameManager.playerData.killsMage > 4;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold11:
-#region
+                    #region
                     shouldSplit =
                         store.killsMageKnightStart - gameManager.playerData.killsMageKnight == 2 &&  // 1 Soul Warrior
                         store.killsMageStart - gameManager.playerData.killsMage == 5;    // 1 Soul Twister
@@ -2697,9 +2611,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsMageKnightStart - gameManager.playerData.killsMageKnight > 2 ||
                         store.killsMageStart - gameManager.playerData.killsMage > 5;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold12a:
-#region
+                    #region
                     shouldSplit =
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry == 7 &&  // 2 Winged Fool
                         store.killsColMinerStart - gameManager.playerData.killsColMiner == 4 &&  // 1 Sturdy Fool
@@ -2712,19 +2626,19 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsColMinerStart - gameManager.playerData.killsColMiner > 4 ||
                         store.killsLesserMawlekStart - gameManager.playerData.killsLesserMawlek > 4;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold12b:
-#region
+                    #region
                     shouldSplit =
                         store.killsMawlekStart - gameManager.playerData.killsMawlek == 1;    // 1 Brooding Mawlek
                     shouldSkip =
                         gameManager.playerData.killsMawlek == 0 ||
                         store.killsMawlekStart - gameManager.playerData.killsMawlek > 1;
                     break;
-#endregion
+                #endregion
                 // Wave 13 doesn't really exist, it's just vertical Garpedes so there's nothing to Split on
                 case SplitName.Gold14a:
-#region
+                    #region
                     shouldSplit =
                         store.killsColMosquitoStart - gameManager.playerData.killsColMosquito == 10 && // 1 Squit
                         store.killsSpitterStart - gameManager.playerData.killsSpitter == 7 &&  // 1 Aspid
@@ -2737,9 +2651,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsHeavyMantisFlyerStart - gameManager.playerData.killsMantisHeavyFlyer > 5 ||
                         store.killsSpitterStart - gameManager.playerData.killsSpitter - 1 > 7;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold14b:
-#region
+                    #region
                     shouldSplit =
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry == 10 && // 2 Winged Fool
                         store.killsBlobbleStart - gameManager.playerData.killsBlobble == 7;    // 4 Obble
@@ -2749,27 +2663,27 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry > 10 ||
                         store.killsBlobbleStart - gameManager.playerData.killsBlobble > 7;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold15:
-#region
+                    #region
                     shouldSplit =
                         store.killsColMosquitoStart - gameManager.playerData.killsColMosquito == 12;    // 2 Squit
                     shouldSkip =
                         gameManager.playerData.killsColMosquito == 0 ||
                         store.killsColMosquitoStart - gameManager.playerData.killsColMosquito > 12;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold16:
-#region
+                    #region
                     shouldSplit =
                         store.killsColHopperStart - gameManager.playerData.killsColHopper == 25;    // 14 Loodle elderC
                     shouldSkip =
                         gameManager.playerData.killsColHopper == 0 ||
                         store.killsColHopperStart - gameManager.playerData.killsColHopper > 25;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold17a:
-#region
+                    #region
                     shouldSplit =
                         store.killsColWormStart - gameManager.playerData.killsColWorm == 6 &&  // 1 Heavy Fool
                         store.killsColMinerStart - gameManager.playerData.killsColMiner == 5 &&  // 1 Sturdy Fool
@@ -2791,9 +2705,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsHeavyMantisStart - gameManager.playerData.killsHeavyMantis > 3 ||
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry - 1 > 11;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold17b:
-#region
+                    #region
                     shouldSplit =
                         store.killsColWormStart - gameManager.playerData.killsColWorm == 7 &&  // 1 Heavy Fool
                         store.killsColShieldStart - gameManager.playerData.killsColShield == 5 &&  // 1 Shielded Fool
@@ -2809,9 +2723,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsMageStart - gameManager.playerData.killsMage > 6 ||
                         store.killsElectricMageStart - gameManager.playerData.killsElectricMage > 4;
                     break;
-#endregion
+                #endregion
                 case SplitName.Gold17c:
-#region
+                    #region
                     shouldSplit =
                         store.killsColRollerStart - gameManager.playerData.killsColRoller == 4 &&  // 2 Baldur
                         store.killsColMosquitoStart - gameManager.playerData.killsColMosquito == 14 && // 2 Squit
@@ -2833,9 +2747,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         store.killsColMinerStart - gameManager.playerData.killsColMiner > 6 ||
                         store.killsColFlyingSentryStart - gameManager.playerData.killsColFlyingSentry > 12;
                     break;
-#endregion
+                #endregion
                 case SplitName.GoldEnd:
-#region
+                    #region
                     shouldSplit =
                         store.killsLobsterLancerStart - gameManager.playerData.killsLobsterLancer == 1;    // God Tamer
                     shouldSkip =
@@ -2843,8 +2757,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         sceneName.StartsWith("Room_Colosseum_Gold") &&
                         nextScene != sceneName;
                     break;
-#endregion
-#endregion
+                #endregion
+                #endregion
 
                 default:
                     break;
@@ -2861,78 +2775,56 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 return;
             }
 
-            string currentScene = gameManager.sceneName;
-            string nextScene = gameManager.nextSceneName;
-            GameState gameState = gameManager.gameState;
+            Split splitRef = SplitReader.SplitList.ElementAt(currentSplitIndex);
 
-            if (Input.GetKeyDown(KeyCode.P)) {
-                isPaused = !isPaused;
-            }
-
-            if (!timeStart && (nextScene.Equals("Tutorial_01", StringComparison.OrdinalIgnoreCase) && gameState == GameState.ENTERING_LEVEL ||
-                               nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene" ||
-                               HeroController.instance != null)) {
-                timeStart = true;
-                ref Split refSplit = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-                refSplit.StartSplitTimer(inGameTime);
-            }
-
-            if (timeStart && !timeEnd && (nextScene.StartsWith("Cinematic_Ending", StringComparison.OrdinalIgnoreCase) ||
-                                          nextScene == "GG_End_Sequence") || SplitLastSplit) {
-                timeEnd = true;
-            }
-
-            bool timePaused = false;
-
-            // thanks ShootMe, in game time logic copy from https://github.com/ShootMe/LiveSplit.HollowKnight
-            try {
-                UIState uiState = gameManager.ui.uiState;
-                bool loadingMenu = currentScene != "Menu_Title" && string.IsNullOrEmpty(nextScene) ||
-                                   currentScene != "Menu_Title" && nextScene == "Menu_Title";
-                if (gameState == GameState.PLAYING && lastGameState == GameState.MAIN_MENU) {
-                    lookForTeleporting = true;
+            /*if (timeStart && !timePaused && !timeEnd) {
+                if (timeSinceResume == 0f && !didSplit) {
+                    LiveSplitData.Add(timeSincePause.ToString() + "Resume");;
+                    timeSincePause = 0f;
                 }
-
-                bool teleporting = (bool)TeleportingFieldInfo.GetValue(gameManager.cameraCtrl);
-                if (lookForTeleporting && (teleporting || gameState != GameState.PLAYING && gameState != GameState.ENTERING_LEVEL)) {
-                    lookForTeleporting = false;
-                }
-
-                timePaused =
-                    gameState == GameState.PLAYING && teleporting && gameManager.hero_ctrl?.cState.hazardRespawning == false
-                    || lookForTeleporting
-                    || gameState is GameState.PLAYING or GameState.ENTERING_LEVEL && uiState != UIState.PLAYING
-                    || gameState != GameState.PLAYING && !gameManager.inputHandler.acceptingInput
-                    || gameState is GameState.EXITING_LEVEL or GameState.LOADING
-                    || gameManager.hero_ctrl?.transitionState == HeroTransitionState.WAITING_TO_ENTER_LEVEL
-                    || uiState != UIState.PLAYING &&
-                    (loadingMenu || uiState != UIState.PAUSED && (!string.IsNullOrEmpty(nextScene) || currentScene == "_test_charms")) &&
-                    nextScene != currentScene
-                    || minorVersion < 3 && (bool)TilemapDirtyFieldInfo.GetValue(gameManager)
-                    || ConfigManager.PauseTimer
-                    || isPaused;
-            } catch {
-                // ignore
+                SplitReader.SplitList.ElementAt(currentSplitIndex).IncreaseTimer(Time.unscaledDeltaTime);
+                timeSinceResume += Time.unscaledDeltaTime;
             }
-
-            lastGameState = gameState;
-            ref Split splitRef = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-
-            if (timeStart && !timePaused && !timeEnd) {
-                inGameTime += Time.unscaledDeltaTime;
-                splitRef.IncreaseTimer(Time.unscaledDeltaTime);
+            if (timeStart && timePaused && !timeEnd) {
+                if (timeSincePause == 0f && InGameTime != 0) {
+                    LiveSplitData.Add(timeSinceResume.ToString() + "Pause");
+                    timeSinceResume = 0f;
+                }
+                didSplit = false;
+                timeSincePause += Time.unscaledDeltaTime;
+            }*/
+            if (TimeStart && !TimePaused && !TimeEnd) {
+                splitRef.IncreaseTimer((float)Time.unscaledDeltaTime);
             }
             if (!SplitLastSplit && CheckSplit(gameManager, splitRef.SplitTrigger, gameManager.nextSceneName, gameManager.sceneName)) {
                 if (currentSplitIndex < SplitReader.SplitList.Count-1) {
                     currentSplitIndex++;
-                    ref Split newSplitRef = ref SplitReader.SplitList.ElementAt(currentSplitIndex).SplitRef;
-                    newSplitRef.StartSplitTimer(inGameTime);
+                    Split newSplit = SplitReader.SplitList.ElementAt(currentSplitIndex);
+                    newSplit.StartSplitTimer(splitRef.TotalTime, splitRef.TotalTime);
                 } else {
                     SplitLastSplit = true;
                 }
+                //LiveSplitData.Add(timeSincePause.ToString() + "Split");
+                //timeSincePause = 0f;
+                //didSplit = true;
             }
-            if (inGameTime > 0 && ConfigManager.ShowSplits) {
-                infoBuilder.AppendLine(FormattedTime);
+
+            List<string> result = new();
+
+            if (SplitReader.SplitList.ElementAt(currentSplitIndex).TotalTime > 0 && ConfigManager.ShowSplits) {
+                if (currentSplitIndex > 0) {
+                    result.Add(SplitReader.SplitList.ElementAt(currentSplitIndex - 1).SplitTitle + ": " +
+                    FormattedTime(SplitReader.SplitList.ElementAt(currentSplitIndex - 1).SplitTime) + " " +
+                    FormattedTime(SplitReader.SplitList.ElementAt(currentSplitIndex - 1).TotalTime));
+                }
+                result.Add(SplitReader.SplitList.ElementAt(currentSplitIndex).SplitTitle + ": " + 
+                    FormattedTime(SplitReader.SplitList.ElementAt(currentSplitIndex).SplitTime) + " " +
+                    FormattedTime(SplitReader.SplitList.ElementAt(currentSplitIndex).TotalTime));
+            }
+
+            string resultString = StringUtils.Join("\n", result);
+            if (!string.IsNullOrEmpty(resultString)) {
+                infoBuilder.AppendLine(resultString);
             }
         }
     }

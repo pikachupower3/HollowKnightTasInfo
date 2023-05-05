@@ -83,9 +83,12 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             // 放第二位，先处理镜头之后 camera.WorldToScreenPoint 才能获得正确数据
             CameraManager.OnPreRender(gameManager);
+            AddToPlayerData.OnPreRender(gameManager);
             HeroInfo.OnPreRender(gameManager, infoBuilder);
             CustomInfo.OnPreRender(gameManager, infoBuilder);
+            BaseTimer.OnPreRender(gameManager);
             AutoSplit.OnPreRender(gameManager, infoBuilder);
+            RoomTimer.OnPreRender(gameManager, infoBuilder);
             TimeInfo.OnPreRender(gameManager, infoBuilder);
             EnemyInfo.OnPreRender(gameManager, infoBuilder);
             HitboxInfo.OnPreRender(gameManager, infoBuilder);
