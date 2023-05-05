@@ -26,10 +26,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             StringBuilder infoBuilder = new();
 
-            if (Input.GetKeyDown(KeyCode.Q)) {
-                LiveSplitWrite.WriteTest(AutoSplit.LiveSplitData);
-            }
-
             try {
                 DesyncChecker.BeforeUpdate();
                 if (!init) {
@@ -92,7 +88,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             AddToPlayerData.OnPreRender(gameManager);
             HeroInfo.OnPreRender(gameManager, infoBuilder);
             CustomInfo.OnPreRender(gameManager, infoBuilder);
+            BaseTimer.OnPreRender(gameManager);
             AutoSplit.OnPreRender(gameManager, infoBuilder);
+            RoomTimer.OnPreRender(gameManager, infoBuilder);
             TimeInfo.OnPreRender(gameManager, infoBuilder);
             EnemyInfo.OnPreRender(gameManager, infoBuilder);
             HitboxInfo.OnPreRender(gameManager, infoBuilder);

@@ -2770,7 +2770,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             store = new HollowKnightStoredData(gameManager);
         }
 
-        public new static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             if (!SplitReader.ReadSplits) {
                 return;
             }
@@ -2793,7 +2793,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 didSplit = false;
                 timeSincePause += Time.unscaledDeltaTime;
             }*/
-            splitRef.IncreaseTimer((float)BaseTimer.OnPreRender(gameManager, infoBuilder));
+            if (TimeStart && !TimePaused && !TimeEnd) {
+                splitRef.IncreaseTimer((float)Time.unscaledDeltaTime);
+            }
             if (!SplitLastSplit && CheckSplit(gameManager, splitRef.SplitTrigger, gameManager.nextSceneName, gameManager.sceneName)) {
                 if (currentSplitIndex < SplitReader.SplitList.Count-1) {
                     currentSplitIndex++;

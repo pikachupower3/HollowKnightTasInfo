@@ -39,13 +39,14 @@ GiveLantern = false
 StartingGameTime = 0
 PauseTimer = false
 
-# Send a T input to add all,
-# Y for Soul, U for Geo, I for Essence, O for Masks, P for LifeBlood
+# Send a R input to add all,
+# T for Soul, Y for Geo, U for Essence, G for Masks, H for LifeBlood, J for Soul Vessels
 AddSoul = 0
 AddGeo = 0
 AddEssence = 0
 AddMasks = 0
 AddLifeBlood = 0
+AddSoulVessel = 0
 
 # 碰撞箱颜色 ARGB 格式，注释或删除则不显示该类 hitbox
 KnightHitbox = 0xFF00FF00
@@ -86,6 +87,7 @@ DisableCameraShake = false
         public static bool ShowCustomInfo => Enabled && GetSettingValue<bool>(nameof(ShowCustomInfo)) && !ShowTimeOnly;
         public static bool ShowKnightInfo => Enabled && GetSettingValue<bool>(nameof(ShowKnightInfo)) && !ShowTimeOnly;
         public static bool ShowSceneName => Enabled && GetSettingValue<bool>(nameof(ShowSceneName)) && !ShowTimeOnly;
+        public static bool ShowRoomTime => Enabled && GetSettingValue<bool>(nameof(ShowRoomTime)) && !ShowTimeOnly;
         public static bool ShowTime => Enabled && GetSettingValue<bool>(nameof(ShowTime));
         public static bool ShowSplits => Enabled && GetSettingValue<bool>(nameof(ShowSplits));
         public static bool ShowTimeMinusFixedTime => Enabled && GetSettingValue<bool>(nameof(ShowTimeMinusFixedTime)) && !ShowTimeOnly;
@@ -114,6 +116,7 @@ DisableCameraShake = false
         public static int AddEssence => GetSettingValue<int>(nameof(AddEssence));
         public static int AddMasks => GetSettingValue<int>(nameof(AddMasks));
         public static int AddLifeBlood => GetSettingValue<int>(nameof(AddLifeBlood));
+        public static int AddSoulVessel => GetSettingValue<int>(nameof(AddSoulVessel));
 
         public static string GetHitboxColorValue(HitboxInfo.HitboxType hitboxType) {
             return GetSettingValue($"{hitboxType}Hitbox", string.Empty);
@@ -131,7 +134,7 @@ DisableCameraShake = false
                 }
 
                 try {
-                    return (T) (typeof(T).IsEnum ? Enum.Parse(typeof(T), value, true) : Convert.ChangeType(value, typeof(T)));
+                    return (T)(typeof(T).IsEnum ? Enum.Parse(typeof(T), value, true) : Convert.ChangeType(value, typeof(T)));
                 } catch {
                     return defaultValue;
                 }

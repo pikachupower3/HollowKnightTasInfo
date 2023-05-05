@@ -12,24 +12,24 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static readonly FieldInfo TeleportingFieldInfo = typeof(CameraController).GetFieldInfo("teleporting");
         private static readonly FieldInfo TilemapDirtyFieldInfo = typeof(GameManager).GetFieldInfo("tilemapDirty");
 
-        private protected static bool timeStart = false;
-        private protected static bool timeEnd = false;
-        private protected static bool timePaused = false;
+        private protected static bool TimeStart { get; private set; } = false;
+        private protected static bool TimeEnd { get; private set; } = false;
+        private protected static bool TimePaused { get; private set; } = false;
         private static readonly int MinorVersion = int.Parse(Constants.GAME_VERSION.Substring(2, 1));
 
-        private protected static string FormattedTime(float time) {
+        private protected static string FormattedTime(double time) {
             if (time == 0) {
                 return string.Empty;
             } else if (time < 60) {
                 return time.ToString("F2");
             } else if (time < 3600) {
                 int minute = (int)(time / 60);
-                float second = time - minute * 60;
+                double second = time - minute * 60;
                 return $"{minute}:{second.ToString("F2").PadLeft(5, '0')}";
             } else {
                 int hour = (int)(time / 3600);
                 int minute = (int)((time - hour * 3600) / 60);
-                float second = time - hour * 3600 - minute * 60;
+                double second = time - hour * 3600 - minute * 60;
                 return $"{hour}:{minute.ToString().PadLeft(2, '0')}:{second.ToString("F2").PadLeft(5, '0')}";
             }
         }
@@ -38,7 +38,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static bool lookForTeleporting;
         private static bool isPaused = false;
 
-        private protected static double OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        public static void OnPreRender(GameManager gameManager) {
             string currentScene = gameManager.sceneName;
             string nextScene = gameManager.nextSceneName;
             GameState gameState = gameManager.gameState;
@@ -49,21 +49,21 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             double retTime = 0d;
 
-            if (!timeStart && (!string.IsNullOrEmpty(ConfigManager.TimerStartTransition) && nextScene.Equals(ConfigManager.TimerStartTransition) ||
+            if (!TimeStart && (!string.IsNullOrEmpty(ConfigManager.TimerStartTransition) && nextScene.Equals(ConfigManager.TimerStartTransition) ||
                                (string.IsNullOrEmpty(ConfigManager.TimerStartTransition) && 
                                (nextScene.Equals("Tutorial_01", StringComparison.OrdinalIgnoreCase) && gameState == GameState.ENTERING_LEVEL ||
                                nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene" ||
                                HeroController.instance != null)))) {
-                timeStart = true;
+                TimeStart = true;
                 retTime = ConfigManager.StartingGameTime;
             }
 
-            if (timeStart && !timeEnd && (nextScene.StartsWith("Cinematic_Ending", StringComparison.OrdinalIgnoreCase) ||
+            if (TimeStart && !TimeEnd && (nextScene.StartsWith("Cinematic_Ending", StringComparison.OrdinalIgnoreCase) ||
                                           nextScene == "GG_End_Sequence") || AutoSplit.SplitLastSplit) {
-                timeEnd = true;
+                TimeEnd = true;
             }
 
-            timePaused = false;
+            TimePaused = false;
 
             // thanks ShootMe, in game time logic copy from https://github.com/ShootMe/LiveSplit.HollowKnight
             try {
@@ -79,7 +79,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     lookForTeleporting = false;
                 }
 
-                timePaused =
+                TimePaused =
                     gameState == GameState.PLAYING && teleporting && gameManager.hero_ctrl?.cState.hazardRespawning == false
                     || lookForTeleporting
                     || gameState is GameState.PLAYING or GameState.ENTERING_LEVEL && uiState != UIState.PLAYING
@@ -97,12 +97,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
 
             lastGameState = gameState;
-
-            if (timeStart && !timePaused && !timeEnd) {
-                retTime += Time.unscaledDeltaTime;
-            }
-
-            return retTime;
         }
     }
 }

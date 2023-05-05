@@ -9,18 +9,17 @@ using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
     internal class TimeInfo : BaseTimer {
-        private protected static float InGameTime { get; private set; } = 0f;
-        public new static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        private static float inGameTime = 0f;
+        public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
 
-            InGameTime += (float)BaseTimer.OnPreRender(gameManager, infoBuilder);
-
-            List<string> result = new();
-            if (!string.IsNullOrEmpty(gameManager.sceneName) && ConfigManager.ShowSceneName) {
-                result.Add(gameManager.sceneName);
+            if (TimeStart && !TimePaused && !TimeEnd) {
+                inGameTime += Time.unscaledDeltaTime;
             }
 
-            if (InGameTime > 0 && ConfigManager.ShowTime) {
-                result.Add(FormattedTime(InGameTime));
+            List<string> result = new();
+
+            if (inGameTime > 0 && ConfigManager.ShowTime) {
+                result.Add(FormattedTime(inGameTime));
             }
 
             string resultString = StringUtils.Join("  ", result);
