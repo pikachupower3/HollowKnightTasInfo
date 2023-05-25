@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net35</TargetFramework>
         <LangVersion>9</LangVersion>
-        <Configurations>v1028;v1221;v1432;v1028_Krythom;v1037</Configurations>
+        <Configurations>v1028;v1221;v1432;v1028_Krythom;v1037;v1211</Configurations>
         <Platforms>AnyCPU</Platforms>
         <AssemblyVersion>0.2.5</AssemblyVersion>
         <FileVersion>0.2.5</FileVersion>
@@ -29,6 +29,12 @@
         <Optimize>true</Optimize>
         <DebugType>none</DebugType>
         <OutputPath>bin\v1221\</OutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)'=='v1211'">
+      <Optimize>true</Optimize>
+      <DebugType>none</DebugType>
+      <OutputPath>bin\v1211\</OutputPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -66,6 +72,10 @@
             <Private>False</Private>
             <HintPath>lib\v1432\UnityEngine.CoreModule.dll</HintPath>
         </Reference>
+        <Reference Include="UnityEngine.JSONSerializeModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" Condition="$(Configuration) == v1432">
+            <Private>False</Private>
+            <HintPath>lib\v1432\UnityEngine.JSONSerializeModule.dll</HintPath>
+        </Reference>
         <Reference Include="UnityEngine.Physics2DModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" Condition="$(Configuration) == v1432">
             <Private>False</Private>
             <HintPath>lib\v1432\UnityEngine.Physics2DModule.dll</HintPath>
@@ -102,6 +112,10 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='v1221|AnyCPU'">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='v1211|AnyCPU'">
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
