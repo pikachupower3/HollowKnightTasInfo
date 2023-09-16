@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using HutongGames.PlayMaker.Actions;
 using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
@@ -15,6 +16,7 @@ ShowKnightInfo = true
 ShowCustomInfo = true
 ShowSceneName = true
 ShowTime = true
+ShowUnscaledTime = false
 ShowTimeOnly = false
 ShowTimeMinusFixedTime = true
 ShowRng = true
@@ -33,6 +35,7 @@ GiveLantern = false
 UseLegacyRngSync = false
 StartingGameTime = 0
 PauseTimer = false
+RecordMultiSync = false
 
 # 碰撞箱颜色 ARGB 格式，注释或删除则不显示该类 hitbox
 KnightHitbox = 0xFF00FF00
@@ -74,6 +77,7 @@ DisableCameraShake = false
         public static bool ShowKnightInfo => Enabled && GetSettingValue<bool>(nameof(ShowKnightInfo)) && !ShowTimeOnly;
         public static bool ShowSceneName => Enabled && GetSettingValue<bool>(nameof(ShowSceneName)) && !ShowTimeOnly;
         public static bool ShowTime => Enabled && GetSettingValue<bool>(nameof(ShowTime));
+        public static bool ShowUnscaledTime => Enabled && GetSettingValue<bool>(nameof(ShowUnscaledTime));
         public static bool ShowTimeMinusFixedTime => Enabled && GetSettingValue<bool>(nameof(ShowTimeMinusFixedTime)) && !ShowTimeOnly;
         public static bool ShowRng => Enabled && GetSettingValue<bool>(nameof(ShowRng)) && !ShowTimeOnly;
         public static bool ShowEnemyHp => Enabled && GetSettingValue<bool>(nameof(ShowEnemyHp)) && !ShowTimeOnly;
@@ -95,6 +99,7 @@ DisableCameraShake = false
         public static float StartingGameTime => GetSettingValue<float>(nameof(StartingGameTime));
         public static int StartingSoul => GetSettingValue<int>(nameof(StartingSoul));
         public static int StartingHealth => GetSettingValue<int>(nameof(StartingHealth));
+        public static bool RecordMultiSync => GetSettingValue<bool>(nameof(RecordMultiSync), false);
 
         public static string GetHitboxColorValue(HitboxInfo.HitboxType hitboxType) {
             return GetSettingValue($"{hitboxType}Hitbox", string.Empty);

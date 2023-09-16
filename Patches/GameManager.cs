@@ -141,7 +141,10 @@ class patch_GameManager : GameManager {
             tk2dsa.GetClipByName("Shrink").fps = 15 * 0.95f;
             tk2dsa.GetClipByName("Drain").fps = 30 * 0.95f;
         }
-    }}
+    }
+}
+
+
 
 [MonoModCustomMethodAttribute("NoInlining")]
 public class NoInlining : Attribute {

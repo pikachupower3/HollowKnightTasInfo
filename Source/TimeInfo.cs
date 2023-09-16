@@ -46,7 +46,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             if (!timeStart && (nextScene.Equals("Tutorial_01", StringComparison.OrdinalIgnoreCase) && gameState == GameState.ENTERING_LEVEL ||
                                nextScene is "GG_Vengefly_V" or "GG_Boss_Door_Entrance" or "GG_Entrance_Cutscene" ||
-                               HeroController.instance != null)) {
+                               gameManager.hero_ctrl != null)) {
                 timeStart = true;
                 inGameTime = ConfigManager.StartingGameTime;
             }
@@ -101,6 +101,13 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             if (inGameTime > 0 && ConfigManager.ShowTime) {
                 result.Add(FormattedTime);
+            }
+
+            if (ConfigManager.ShowUnscaledTime) {
+                var utime = TimeSpan.FromSeconds(Time.unscaledTime);
+                var hours = utime.Hours > 0 ? $"{utime.Hours:00}:" : "";
+                var minutes = utime.Minutes > 0 ? $"{utime.Minutes:00}:" : "";
+                result.Add($"UT {hours}{minutes}{utime.Seconds:00}.{utime.Milliseconds:000}");
             }
 
             string resultString = StringUtils.Join("  ", result);

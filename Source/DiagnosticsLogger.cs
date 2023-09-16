@@ -93,6 +93,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 DumpLogFile();
                 RandomInjection.DumpLogs();
                 InputsLogger.DumpLogs();
+                MultiSync.WriteSyncRecording();
             }
 
             if (Input.GetKey(KeyCode.RightBracket)) {
