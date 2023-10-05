@@ -90,6 +90,7 @@ DisableCameraShake = false
         public static int VelocityPrecision => GetSettingValue(nameof(VelocityPrecision), 3);
         public static bool ForceGatheringSwarm => GetSettingValue(nameof(ForceGatheringSwarm), false);
         public static bool GiveLantern => GetSettingValue(nameof(GiveLantern), false);
+        public static bool FakeNoLantern => GetSettingValue(nameof(FakeNoLantern), false);
         public static bool UseLegacyRngSync => GetSettingValue(nameof(UseLegacyRngSync), true);
         public static bool PauseTimer => GetSettingValue(nameof(PauseTimer), false);
         public static float CameraZoom => Enabled ? GetSettingValue(nameof(CameraZoom), 1f) : 1f;

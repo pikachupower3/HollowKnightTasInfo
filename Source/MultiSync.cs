@@ -5,6 +5,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Assembly_CSharp.TasInfo.mm.Source.Utils;
+using Mono.Cecil.Cil;
+using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.RuntimeDetour.HookGen;
 using UnityEngine;
@@ -68,6 +70,30 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
                 _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
             }
+        }
+
+        private static void OnPlayerDataIntAdd(PlayerData self, string name, int amount) {
+            if (_applyingEntry)
+                return;
+
+            var value = self.GetInt(name) + amount;
+            _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
+        }
+
+        private static void OnPlayerDataDecrementInt(PlayerData self, string name) {
+            if (_applyingEntry)
+                return;
+
+            var value = self.GetInt(name) - 1;
+            _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
+        }
+
+        private static void OnPlayerDataIncrementInt(PlayerData self, string name) {
+            if (_applyingEntry)
+                return;
+
+            var value = self.GetInt(name) + 1;
+            _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
         }
 
         private static void OnPlayerDataAddGeo(PlayerData self, int amount) {
@@ -153,6 +179,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     HookUtils.HookEnter<PlayerData, Action<PlayerData, string, bool>>(nameof(PlayerData.SetBool), OnSetPlayerDataBool);
                     HookUtils.HookEnter<PlayerData, Action<PlayerData, string, int>>(nameof(PlayerData.SetInt), OnSetPlayerDataInt);
                     HookUtils.HookEnter<PlayerData, Action<PlayerData, string, float>>(nameof(PlayerData.SetFloat), OnSetPlayerDataFloat);
+                    HookUtils.HookEnter<PlayerData, Action<PlayerData, string>>(nameof(PlayerData.IncrementInt), OnPlayerDataIncrementInt);
+                    HookUtils.HookEnter<PlayerData, Action<PlayerData, string>>(nameof(PlayerData.DecrementInt), OnPlayerDataDecrementInt);
+                    HookUtils.HookEnter<PlayerData, Action<PlayerData, string, int>>(nameof(PlayerData.IntAdd), OnPlayerDataIntAdd);
 
                     //PlayerData geo mutators
                     HookUtils.HookEnter<PlayerData, Action<PlayerData, int>>(nameof(PlayerData.AddGeo), OnPlayerDataAddGeo);
@@ -163,10 +192,24 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     HookUtils.HookEnter<SceneData, Action<SceneData, PersistentIntData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
                     HookUtils.HookEnter<SceneData, Action<SceneData, GeoRockData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
                 }
+
+                var method = typeof(DeactivateInDarknessWithoutLantern).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
+                HookEndpointManager.Modify(method, (Action<ILContext>)DeactivateInDarknessWithoutLanternStart);
             }
             TryParseSyncFile();
             ApplyEntries();
         }
+
+        private static void DeactivateInDarknessWithoutLanternStart(ILContext il) {
+            var c = new ILCursor(il);
+            c.EmitDelegate((Func<bool>)GetFakeNoLantern);
+            var skipRet = c.DefineLabel();
+            c.Emit(OpCodes.Brfalse, skipRet);
+            c.Emit(OpCodes.Ret);
+            c.MarkLabel(skipRet);
+        }
+
+        private static bool GetFakeNoLantern() => ConfigManager.FakeNoLantern;
 
         private static void ApplyEntries() {
             while (_syncEntries.Count > 0 && _syncEntries.Peek().Time <= Time.unscaledTime) {
@@ -204,7 +247,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 if (entry.Value > 0) {
                     hero.AddGeo((int)entry.Value);
                 } else if (entry.Value < 0) {
-                    hero.TakeGeo((int)(-1 * entry.Value));
+                    //hero.TakeGeo((int)(-1 * entry.Value));
+                    PlayerData.instance.TakeGeo((int)(-1 * entry.Value));
+                    hero.geoCounter.NewSceneRefresh();
                 }
             }
         }
@@ -220,6 +265,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 PlayerData.instance.SetFloat(entry.Tag, entry.Value);
             } else if (field.FieldType == typeof(int)) {
                 PlayerData.instance.SetInt(entry.Tag, (int)entry.Value);
+                if (entry.Tag == "nailDamage") {
+                    PlayMakerFSM.BroadcastEvent("UPDATE NAIL DAMAGE");
+                }
             }
         }
 
@@ -232,6 +280,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             var sceneName = entry.Tag.Substring(0, colonIndex);
             var persistentType = entry.Tag.Substring(colonIndex + 1, bracketIndex - colonIndex - 1).ToLower();
             var id = entry.Tag.Substring(bracketIndex + 1, entry.Tag.Length - bracketIndex - 2);
+            Debug.Log($"Updating SceneData type {persistentType} for scene '{sceneName}', id '{id}', value '{entry.Value}'");
 
             if (persistentType == "geo") {
                 var geo = new GeoRockData();
