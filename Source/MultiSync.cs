@@ -193,8 +193,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     HookUtils.HookEnter<SceneData, Action<SceneData, GeoRockData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
                 }
 
-                var method = typeof(DeactivateInDarknessWithoutLantern).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
-                HookEndpointManager.Modify(method, (Action<ILContext>)DeactivateInDarknessWithoutLanternStart);
+                //var method = typeof(DeactivateInDarknessWithoutLantern).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
+                //HookEndpointManager.Modify(method, (Action<ILContext>)DeactivateInDarknessWithoutLanternStart);
             }
             TryParseSyncFile();
             ApplyEntries();

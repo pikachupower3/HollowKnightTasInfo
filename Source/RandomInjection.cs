@@ -12,6 +12,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour.HookGen;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
 
@@ -60,7 +61,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             foreach (var method in targetMethods.Where(m => m != null)) {
                 if (typeof(FsmStateAction).IsAssignableFrom(method.DeclaringType)) {
                     InjectOnRangeFsm(method);
-                } else {
+                } else if (typeof(MonoBehaviour).IsAssignableFrom(method.DeclaringType) && !method.IsStatic) {
+                    InjectOnRangeMB(method);
+                }
+                else {
                     InjectOnRange(method);
                 }
             }
@@ -422,6 +426,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             HookEndpointManager.Modify(method, (Action<ILContext>)InjectOnRange);
         }
 
+        private static void InjectOnRangeMB(MethodInfo method) {
+            HookEndpointManager.Modify(method, (Action<ILContext>)InjectOnRangeMB);
+        }
+
         private static void InjectOnRangeFsm(MethodInfo method) {
             HookEndpointManager.Modify(method, (Action<ILContext>)InjectOnRangeFsm);
         }
@@ -444,6 +452,25 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 c.Remove();
                 c.Emit(OpCodes.Ldstr, name);
                 c.Emit(OpCodes.Call, typeof(RandomInjection).GetMethod("OnRangeInt", BindingFlags.Public | BindingFlags.Static));
+            }
+        }
+
+        private static void InjectOnRangeMB(ILContext il) {
+            var name = TrimNamespace(il.Method.Name);
+            var c = new ILCursor(il);
+            while (c.TryGotoNext(MoveType.Before, x => x.MatchCall(_rangeFloat))) {
+                c.Remove();
+                c.Emit(OpCodes.Ldstr, name);
+                c.Emit(OpCodes.Ldarg_0);
+                c.Emit(OpCodes.Call, typeof(RandomInjection).GetMethod("OnRangeFloatMB", BindingFlags.Public | BindingFlags.Static));
+            }
+
+            c.Goto(0);
+            while (c.TryGotoNext(MoveType.Before, x => x.MatchCall(_rangeInt))) {
+                c.Remove();
+                c.Emit(OpCodes.Ldstr, name);
+                c.Emit(OpCodes.Ldarg_0);
+                c.Emit(OpCodes.Call, typeof(RandomInjection).GetMethod("OnRangeIntMB", BindingFlags.Public | BindingFlags.Static));
             }
         }
 
@@ -481,7 +508,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         private static string TrimNamespace(string name) {
-            var playMakerNs = "HutongGames.PlayMaker.Actions.";
+            const string playMakerNs = "HutongGames.PlayMaker.Actions.";
             if (name.StartsWith(playMakerNs))
                 name = name.Substring(playMakerNs.Length);
 
@@ -546,18 +573,31 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
+        public static float OnRangeFloatMB(float min, float max, string name, MonoBehaviour component) {
+            var id = component.gameObject.GetInstanceID();
+            return OnRangeFloat(min, max, $"[{id}]{name}");
+        }
+
+        public static int OnRangeIntMB(int min, int max, string name, MonoBehaviour component) {
+            var id = component.gameObject.GetInstanceID();
+            return OnRangeInt(min, max, $"[{id}]{name}");
+        }
+
         public static float OnRangeFloatFsm(float min, float max, string name, FsmStateAction action) {
-            return OnRangeFloat(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
+            var id = action.Fsm?.GameObject?.GetInstanceID() ?? 0;
+            return OnRangeFloat(min, max, $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
         }
 
         public static int OnRangeIntFsm(int min, int max, string name, FsmStateAction action) {
-            return OnRangeInt(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
+            var id = action.Fsm?.GameObject?.GetInstanceID() ?? 0;
+            return OnRangeInt(min, max, $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
         }
 
         public static int OnGetRwiFsm(FsmFloat[] weights, string name, FsmStateAction action) {
             lock (_lock) {
                 CheckScene();
-                var compName = $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}";
+                var id = action.Fsm?.GameObject?.GetInstanceID() ?? 0;
+                var compName = $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}";
                 int result;
                 if (EnablePlayback && TryGetPlayback(compName, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
