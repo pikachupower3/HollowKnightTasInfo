@@ -124,6 +124,13 @@
         <Copy SourceFiles="$(SolutionDir)/HollowKnightTasInfo.lua" DestinationFiles="$(OutputDir)/HollowKnightTasInfo.lua" />
         <Copy SourceFiles="$(TargetDir)MONOMODDED_Assembly-CSharp.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/Assembly-CSharp.dll" />
         <Copy SourceFiles="$(TargetDir)Assembly-CSharp.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/original/Assembly-CSharp.dll" />
+        <Copy SourceFiles="$(TargetDir)MonoMod.RuntimeDetour.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/MonoMod.RuntimeDetour.dll" />
+        <Copy SourceFiles="$(TargetDir)MonoMod.Utils.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/MonoMod.Utils.dll" />
+        <Copy SourceFiles="$(TargetDir)Mono.Cecil.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/Mono.Cecil.dll" />
+        <Copy SourceFiles="$(TargetDir)Mono.Cecil.Mdb.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/Mono.Cecil.Mdb.dll" />
+        <Copy SourceFiles="$(TargetDir)Mono.Cecil.Pdb.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/Mono.Cecil.Pdb.dll" />
+        <Copy SourceFiles="$(TargetDir)Mono.Cecil.Rocks.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/Mono.Cecil.Rocks.dll" />
+        <Copy SourceFiles="$(TargetDir)Mono.Security.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/Mono.Security.dll" />
 
         <ZipDirectory SourceDirectory="$(AllOutputDir)" DestinationFile="$(ZipFile)" />
 
