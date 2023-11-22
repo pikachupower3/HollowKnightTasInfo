@@ -28,7 +28,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static object _lock;
         private static int _sceneIndex;
         private static int _nextSceneRollCount;
-        private static bool _useLegacyRngSync;
 
         public static bool EnablePlayback;
         public static bool EnableRecording;
@@ -44,7 +43,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             EnableRecording = true;
             EnableDetailLogging = false;
             EnablePlayback = true;
-            _useLegacyRngSync = ConfigManager.UseLegacyRngSync;
             _sceneIndex = 0;
             _sceneNames.Add("Start");
 
@@ -523,10 +521,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 if (EnablePlayback && TryGetPlayback(name, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
                     result = playbackState.Values[playbackState.Index - 1];
-                    if (!_useLegacyRngSync) {
-                        //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
-                        var discard = UnityEngine.Random.Range(min, max);
-                    }
+                    //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
+                    var discard = UnityEngine.Random.Range(min, max);
                 } else {
                     result = UnityEngine.Random.Range(min, max);
                 }
@@ -552,10 +548,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 if (EnablePlayback && TryGetPlayback(name, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
                     result = (int)playbackState.Values[playbackState.Index - 1];
-                    if (!_useLegacyRngSync) {
-                        //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
-                        var discard = UnityEngine.Random.Range(min, max);
-                    }
+                    //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
+                    var discard = UnityEngine.Random.Range(min, max);
                 } else {
                     result = UnityEngine.Random.Range(min, max);
                 }
@@ -602,10 +596,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 if (EnablePlayback && TryGetPlayback(compName, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
                     result = (int)playbackState.Values[playbackState.Index - 1];
-                    if (!_useLegacyRngSync) {
-                        //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
-                        var discard = ActionHelpers.GetRandomWeightedIndex(weights);
-                    }
+                    //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
+                    var discard = ActionHelpers.GetRandomWeightedIndex(weights);
                 } else {
                     result = ActionHelpers.GetRandomWeightedIndex(weights);
                 }

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Text;
 using Assembly_CSharp.TasInfo.mm.Source.Utils;
 using Mono.Cecil.Cil;
@@ -16,20 +18,59 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
     /// This class is used to approximate the behavior of the multiplayer ItemSync mod,
     /// which allows players to synchronize their game states, sharing things like pickups
     /// to make progress in parallel.  This allows approximation of that behavior for
-    /// two TAS movies nominally running in parallel.
+    /// multiple TAS movies nominally running in parallel.
     /// </summary>
     internal static class MultiSync {
         private const string SyncFile = "./Playback/MultiSync.txt";
-        private const string RecordingFile = "./Recording/MultiSync.txt";
+
+        private static HashSet<string> _filteredPlayerDataBools = new();
+        private static HashSet<string> _filteredPlayerDataInts = new();
+        private static HashSet<string> _filteredPlayerDataFloats = new();
 
         private static DateTime _lastFileWriteTime;
         private static Queue<SyncEntry> _syncEntries = new();
         private static Dictionary<string, SyncType> _syncTypeMap = new();
-        private static List<string> _syncRecord;
+        private static List<SyncEntry> _syncRecord;
         private static bool _applyingEntry;
         private static bool _initialized;
 
         public static void Init() {
+            _filteredPlayerDataBools.Add("disablePause");
+            _filteredPlayerDataBools.Add("atBench");
+            _filteredPlayerDataBools.Add("respawnFacingRight");
+            _filteredPlayerDataBools.Add("soulLimited");
+            _filteredPlayerDataBools.Add("canOvercharm");
+            _filteredPlayerDataBools.Add("overcharmed");
+            _filteredPlayerDataBools.Add("isInvincible");
+            _filteredPlayerDataBools.Add("metStag");
+            _filteredPlayerDataBools.Add("traveling");
+
+            _filteredPlayerDataInts.Add("previousDarkness");
+            _filteredPlayerDataInts.Add("currentArea");
+            _filteredPlayerDataInts.Add("");
+            _filteredPlayerDataInts.Add("currentInvPane");
+            _filteredPlayerDataInts.Add("charmSlotsFilled");
+            _filteredPlayerDataInts.Add("geoPool");
+            _filteredPlayerDataInts.Add("shadeHealth");
+            _filteredPlayerDataInts.Add("shadeMP");
+            _filteredPlayerDataInts.Add("MPCharge");
+            _filteredPlayerDataInts.Add("environmentType");
+            _filteredPlayerDataInts.Add("stagPosition");
+            _filteredPlayerDataInts.Add("respawnType");
+            for (int i = 1; i <= 40; i++) {
+                _filteredPlayerDataInts.Add($"newCharm_{i}");
+                _filteredPlayerDataInts.Add($"equippedCharm_{i}");
+            }
+
+            _filteredPlayerDataFloats.Add("gMap_doorOriginOffsetX");
+            _filteredPlayerDataFloats.Add("gMap_doorOriginOffsetY");
+            _filteredPlayerDataFloats.Add("gMap_doorSceneWidth");
+            _filteredPlayerDataFloats.Add("gMap_doorSceneHeight");
+            _filteredPlayerDataFloats.Add("gMap_doorX");
+            _filteredPlayerDataFloats.Add("gMap_doorY");
+            _filteredPlayerDataFloats.Add("shadePositionX");
+            _filteredPlayerDataFloats.Add("shadePositionY");
+
             foreach (var value in Enum.GetValues(typeof(SyncType))) {
                 _syncTypeMap.Add(value.ToString().ToLower(), (SyncType)value);
             }
@@ -40,10 +81,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 return;
 
             if (self.GetBool(name) != state) {
-                if (name == "disablePause")
+                if (_filteredPlayerDataBools.Contains(name))
                     return;
 
-                _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{(state ? "1" : "0")}");
+                _syncRecord.Add(SyncEntry.PlayerData(name, state ? 1 : 0, Operation.Set));
             }
         }
 
@@ -52,10 +93,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 return;
 
             if (self.GetInt(name) != value) {
-                if (name == "previousDarkness")
+                if (_filteredPlayerDataInts.Contains(name))
                     return;
 
-                _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
+                _syncRecord.Add(SyncEntry.PlayerData(name, value, Operation.Set));
             }
         }
 
@@ -65,10 +106,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (self.GetFloat(name) != value) {
-                if (name.StartsWith("gMap_"))
+                if (_filteredPlayerDataFloats.Contains(name))
                     return;
 
-                _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
+                _syncRecord.Add(SyncEntry.PlayerData(name, value, Operation.Set));
             }
         }
 
@@ -76,68 +117,65 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (_applyingEntry)
                 return;
 
-            var value = self.GetInt(name) + amount;
-            _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
+            if (_filteredPlayerDataInts.Contains(name))
+                return;
+
+            _syncRecord.Add(SyncEntry.PlayerData(name, amount, Operation.Add));
         }
 
         private static void OnPlayerDataDecrementInt(PlayerData self, string name) {
             if (_applyingEntry)
                 return;
 
-            var value = self.GetInt(name) - 1;
-            _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
+            if (_filteredPlayerDataInts.Contains(name))
+                return;
+
+            _syncRecord.Add(SyncEntry.PlayerData(name, 0, Operation.Decrement));
         }
 
         private static void OnPlayerDataIncrementInt(PlayerData self, string name) {
             if (_applyingEntry)
                 return;
 
-            var value = self.GetInt(name) + 1;
-            _syncRecord.Add($"{TimeStr(Time.unscaledTime)},PlayerData.{name},{value}");
+            if (_filteredPlayerDataInts.Contains(name))
+                return;
+
+            _syncRecord.Add(SyncEntry.PlayerData(name, 0, Operation.Increment));
         }
 
         private static void OnPlayerDataAddGeo(PlayerData self, int amount) {
             if (_applyingEntry)
                 return;
 
-            _syncRecord.Add($"{TimeStr(Time.unscaledTime)},Geo,{amount}");
+            _syncRecord.Add(SyncEntry.Geo(amount));
         }
 
         private static void OnPlayerDataTakeGeo(PlayerData self, int amount) {
             if (_applyingEntry)
                 return;
 
-            _syncRecord.Add($"{TimeStr(Time.unscaledTime)},Geo,{-1 * amount}");
+            _syncRecord.Add(SyncEntry.Geo(-1*amount));
         }
 
         private static void OnSceneDataSaveMyState(SceneData self, PersistentBoolData data) {
             if (_applyingEntry || data.semiPersistent)
                 return;
 
-            var priorState = self.FindMyState(data);
-            if (priorState == null || priorState.activated != data.activated) {
-                _syncRecord.Add($"{TimeStr(Time.unscaledTime)},SceneData.{data.sceneName}:bool[{data.id}],{(data.activated ? "1" : "0")}");
-            }
+            _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:bool[{data.id}]", data.activated ? 1 : 0));
         }
 
         private static void OnSceneDataSaveMyState(SceneData self, PersistentIntData data) {
             if (_applyingEntry || data.semiPersistent)
                 return;
 
-            var priorState = self.FindMyState(data);
-            if (priorState == null || priorState.value != data.value) {
-                _syncRecord.Add($"{TimeStr(Time.unscaledTime)},SceneData.{data.sceneName}:int[{data.id}],{(data.value)}");
-            }
+            _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:int[{data.id}]", data.value));
         }
 
         private static void OnSceneDataSaveMyState(SceneData self, GeoRockData data) {
             if (_applyingEntry)
                 return;
 
-            var priorState = self.FindMyState(data);
-            if (priorState == null || priorState.hitsLeft != data.hitsLeft) {
-                _syncRecord.Add($"{TimeStr(Time.unscaledTime)},SceneData.{data.sceneName}:geo[{data.id}],{(data.hitsLeft)}");
-            }
+            _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:geo[{data.id}]", data.hitsLeft));
         }
 
         private static string TimeStr(float time) {
@@ -161,10 +199,50 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (!Directory.Exists("./Recording"))
                 Directory.CreateDirectory("./Recording");
 
-            using (var stream = File.Open(RecordingFile, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
+            bool consolidateGeo = ConfigManager.MultiSyncConsolidateGeo;
+            const float geoWindow = 5;
+            var filename = $"./Recording/MultiSync{ConfigManager.MultiSyncName}.txt";
+            using (var stream = File.Open(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
             using (var writer = new StreamWriter(stream)) {
-                foreach (var line in _syncRecord) {
-                    writer.WriteLine(line);
+
+                bool geoConsolidating = false;
+                float geoStartTime = 0;
+                float geoAmount = 0;
+
+                foreach (var entry in _syncRecord) {
+                    if (entry.SyncType == SyncType.Geo && consolidateGeo) {
+                        if (!geoConsolidating) {
+                            geoConsolidating = true;
+                            geoStartTime = entry.Time;
+                            geoAmount = entry.Value;
+                        } else {
+                            //We round geo consolidation to nearest second that exceeds the window
+                            var endGeo = (int)Math.Ceiling(geoStartTime + geoWindow);
+                            if (entry.Time - endGeo >= 0) {
+                                writer.WriteLine($"{TimeStr(endGeo)},Geo,{geoAmount}");
+                            }
+
+                            //Start the next consolidation window
+                            geoStartTime = entry.Time;
+                            geoAmount = entry.Value;
+                        }
+                    } else {
+                        if (consolidateGeo) {
+                            //We round geo consolidation to nearest second that exceeds the window
+                            var endGeo = (int)Math.Ceiling(geoStartTime + geoWindow);
+                            if (geoConsolidating && (entry.Time - endGeo >= 0)) {
+                                writer.WriteLine($"{TimeStr(endGeo)},Geo,{geoAmount}");
+                                geoAmount = 0;
+                                geoConsolidating = false;
+                            }
+                        }
+                        writer.WriteLine(entry.ToString());
+                    }
+                }
+
+                //At the end, write out any remaining geo from consolidation
+                if (geoConsolidating) {
+                    writer.WriteLine($"{TimeStr(Time.unscaledTime)},Geo,{geoAmount}");
                 }
             }
         }
@@ -173,7 +251,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (!_initialized) {
                 _initialized = true;
                 if (ConfigManager.RecordMultiSync) {
-                    _syncRecord = new List<string>();
+                    _syncRecord = new List<SyncEntry>(10000);
 
                     //PlayerData value mutators (we're ignoring String and Vector)
                     HookUtils.HookEnter<PlayerData, Action<PlayerData, string, bool>>(nameof(PlayerData.SetBool), OnSetPlayerDataBool);
@@ -264,10 +342,28 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             } else if (field.FieldType == typeof(float)) {
                 PlayerData.instance.SetFloat(entry.Tag, entry.Value);
             } else if (field.FieldType == typeof(int)) {
-                PlayerData.instance.SetInt(entry.Tag, (int)entry.Value);
-                if (entry.Tag == "nailDamage") {
-                    PlayMakerFSM.BroadcastEvent("UPDATE NAIL DAMAGE");
-                }
+                ApplyPlayerDataInt(entry);
+            }
+        }
+
+        private static void ApplyPlayerDataInt(SyncEntry entry) {
+            switch (entry.Operation) {
+                case Operation.Set:
+                    PlayerData.instance.SetInt(entry.Tag, (int)entry.Value);
+                    break;
+                case Operation.Increment:
+                    PlayerData.instance.IncrementInt(entry.Tag);
+                    break;
+                case Operation.Decrement:
+                    PlayerData.instance.DecrementInt(entry.Tag);
+                    break;
+                case Operation.Add:
+                    PlayerData.instance.IntAdd(entry.Tag, (int)entry.Value);
+                    break;
+            }
+
+            if (entry.Tag == "nailDamage") {
+                PlayMakerFSM.BroadcastEvent("UPDATE NAIL DAMAGE");
             }
         }
 
@@ -357,9 +453,26 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             success &= TryParseSyncType(syncTypeText, out SyncType syncType);
 
             var tag = dotIndex > -1 ? parts[1].Substring(dotIndex + 1) : "";
-            success &= float.TryParse(parts[2].Trim().TrimStart('+'), out var value);
 
-            entry = new SyncEntry(time, syncType, tag, value);
+            var valueText = parts[2].Trim();
+            Operation op = Operation.Set;
+            if (valueText.StartsWith("+=")) {
+                op = Operation.Add;
+                valueText = valueText.Substring(2);
+            } else if (valueText.StartsWith("++")) {
+                op = Operation.Increment;
+                valueText = valueText.Substring(2);
+            } else if (valueText.StartsWith("--")) {
+                op = Operation.Decrement;
+                valueText = valueText.Substring(2);
+            }
+
+            float value = 0;
+            if (op == Operation.Set || op == Operation.Add) {
+                success &= float.TryParse(valueText.TrimStart('+'), NumberStyles.Float, NumberFormatInfo.InvariantInfo, out value);
+            }
+
+            entry = new SyncEntry(time, syncType, tag, value, op);
             return success;
         }
 
@@ -396,12 +509,20 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             SceneData
         }
 
-        private sealed class SyncEntry {
-            public SyncEntry(float time, SyncType syncType, string tag, float value) {
+        private enum Operation {
+            Set,
+            Add,
+            Increment,
+            Decrement
+        }
+
+        private struct SyncEntry {
+            public SyncEntry(float time, SyncType syncType, string tag, float value, Operation operation) {
                 Time = time;
                 SyncType = syncType;
                 Tag = tag;
                 Value = value;
+                Operation = operation;
             }
 
             public float Time { get; }
@@ -411,6 +532,54 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             public string Tag { get; }
 
             public float Value { get; }
+
+            public Operation Operation { get; }
+
+            public override string ToString() {
+                switch (SyncType) {
+                    case SyncType.None:
+                        return "";
+
+                    case SyncType.Geo:
+                        return $"{TimeStr(Time)},Geo,{Value}";
+
+                    case SyncType.PlayerData:
+                        return $"{TimeStr(Time)},PlayerData.{Tag},{OpStr()}";
+
+                    case SyncType.SceneData:
+                        return $"{TimeStr(Time)},SceneData.{Tag},{Value}";
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            private string OpStr() {
+                switch (Operation) {
+                    case Operation.Set:
+                        return $"{Value}";
+                    case Operation.Add:
+                        return $"+={Value}";
+                    case Operation.Increment:
+                        return "++";
+                    case Operation.Decrement:
+                        return "--";
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+
+            public static SyncEntry Geo(int amount) {
+                return new SyncEntry(UnityEngine.Time.unscaledTime, SyncType.Geo, "", amount, Operation.Set);
+            }
+
+            public static SyncEntry PlayerData(string tag, float amount, Operation op) {
+                return new SyncEntry(UnityEngine.Time.unscaledTime, SyncType.PlayerData, tag, amount, op);
+            }
+
+            public static SyncEntry SceneData(string tag, float amount) {
+                return new SyncEntry(UnityEngine.Time.unscaledTime, SyncType.SceneData, tag, amount, Operation.Set);
+            }
         }
     }
 }
