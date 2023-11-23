@@ -27,12 +27,15 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static HashSet<string> _filteredPlayerDataInts = new();
         private static HashSet<string> _filteredPlayerDataFloats = new();
 
-        private static DateTime _lastFileWriteTime;
-        private static Queue<SyncEntry> _syncEntries = new();
+        private static ListQueue<SyncEntry> _syncEntries;
         private static Dictionary<string, SyncType> _syncTypeMap = new();
         private static List<SyncEntry> _syncRecord;
         private static bool _applyingEntry;
         private static bool _initialized;
+
+        private static int _lastPersistedInt;
+        private static bool _lastPersistedBool;
+        private static int _lastPersistedGeoRock;
 
         public static void Init() {
             _filteredPlayerDataBools.Add("disablePause");
@@ -157,25 +160,88 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             _syncRecord.Add(SyncEntry.Geo(-1*amount));
         }
 
-        private static void OnSceneDataSaveMyState(SceneData self, PersistentBoolData data) {
-            if (_applyingEntry || data.semiPersistent)
-                return;
+        //private static void OnSceneDataSaveMyState(SceneData self, PersistentBoolData data) {
+        //    if (_applyingEntry || data.semiPersistent)
+        //        return;
 
-            _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:bool[{data.id}]", data.activated ? 1 : 0));
+        //    _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:bool[{data.id}]", data.activated ? 1 : 0));
+        //}
+
+        //private static void OnSceneDataSaveMyState(SceneData self, PersistentIntData data) {
+        //    if (_applyingEntry || data.semiPersistent)
+        //        return;
+
+        //    _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:int[{data.id}]", data.value));
+        //}
+
+        //private static void OnSceneDataSaveMyState(SceneData self, GeoRockData data) {
+        //    if (_applyingEntry)
+        //        return;
+
+        //    _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:geo[{data.id}]", data.hitsLeft));
+        //}
+
+        private static void ModifySaveStateInt(ILContext il) {
+            var c = new ILCursor(il);
+
+            c.GotoNext(i => i.Match(OpCodes.Ldarg_0));
+            c.GotoNext(i => i.Match(OpCodes.Ldarg_0));
+
+            c.Emit(OpCodes.Ldarg_0);
+            c.EmitDelegate((Action<PersistentIntItem>)(p => {
+                _lastPersistedInt = p.persistentIntData.value;
+            }));
+
+            c.GotoNext(i => i.Match(OpCodes.Ret));
+            c.Emit(OpCodes.Ldarg_0);
+            c.EmitDelegate((Action<PersistentIntItem>)(p => {
+                int newValue = p.persistentIntData.value;
+                if (newValue != _lastPersistedInt && !p.semiPersistent && !_applyingEntry) {
+                    _syncRecord.Add(SyncEntry.SceneData($"{p.persistentIntData.sceneName}:int[{p.persistentIntData.id}]", newValue));
+                }
+            }));
         }
 
-        private static void OnSceneDataSaveMyState(SceneData self, PersistentIntData data) {
-            if (_applyingEntry || data.semiPersistent)
-                return;
+        private static void ModifySaveStateBool(ILContext il) {
+            var c = new ILCursor(il);
 
-            _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:int[{data.id}]", data.value));
+            c.GotoNext(i => i.Match(OpCodes.Ldarg_0));
+            c.GotoNext(i => i.Match(OpCodes.Ldarg_0));
+
+            c.Emit(OpCodes.Ldarg_0);
+            c.EmitDelegate((Action<PersistentBoolItem>)(p => {
+                _lastPersistedBool = p.persistentBoolData.activated;
+            }));
+
+            c.GotoNext(i => i.Match(OpCodes.Ret));
+            c.Emit(OpCodes.Ldarg_0);
+            c.EmitDelegate((Action<PersistentBoolItem>)(p => {
+                var newValue = p.persistentBoolData.activated;
+                if (newValue != _lastPersistedBool && !p.semiPersistent && !_applyingEntry) {
+                    _syncRecord.Add(SyncEntry.SceneData($"{p.persistentBoolData.sceneName}:bool[{p.persistentBoolData.id}]", newValue ? 1 : 0));
+                }
+            }));
         }
 
-        private static void OnSceneDataSaveMyState(SceneData self, GeoRockData data) {
-            if (_applyingEntry)
-                return;
+        private static void ModifySaveStateGeo(ILContext il) {
+            var c = new ILCursor(il);
 
-            _syncRecord.Add(SyncEntry.SceneData($"{data.sceneName}:geo[{data.id}]", data.hitsLeft));
+            c.GotoNext(i => i.Match(OpCodes.Ldarg_0));
+            c.GotoNext(i => i.Match(OpCodes.Ldarg_0));
+
+            c.Emit(OpCodes.Ldarg_0);
+            c.EmitDelegate((Action<GeoRock>)(p => {
+                _lastPersistedGeoRock = p.geoRockData.hitsLeft;
+            }));
+
+            c.GotoNext(i => i.Match(OpCodes.Ret));
+            c.Emit(OpCodes.Ldarg_0);
+            c.EmitDelegate((Action<GeoRock>)(p => {
+                int newValue = p.geoRockData.hitsLeft;
+                if (newValue != _lastPersistedGeoRock && !_applyingEntry) {
+                    _syncRecord.Add(SyncEntry.SceneData($"{p.geoRockData.sceneName}:int[{p.geoRockData.id}]", newValue));
+                }
+            }));
         }
 
         private static string TimeStr(float time) {
@@ -251,6 +317,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (!_initialized) {
                 _initialized = true;
                 if (ConfigManager.RecordMultiSync) {
+                    //Preallocate a good chunk here to avoid having to resize several times during initial population
                     _syncRecord = new List<SyncEntry>(10000);
 
                     //PlayerData value mutators (we're ignoring String and Vector)
@@ -266,15 +333,25 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     HookUtils.HookEnter<PlayerData, Action<PlayerData, int>>(nameof(PlayerData.TakeGeo), OnPlayerDataTakeGeo);
 
                     //SceneData mutators
-                    HookUtils.HookEnter<SceneData, Action<SceneData, PersistentBoolData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
-                    HookUtils.HookEnter<SceneData, Action<SceneData, PersistentIntData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
-                    HookUtils.HookEnter<SceneData, Action<SceneData, GeoRockData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
+                    //HookUtils.HookEnter<SceneData, Action<SceneData, PersistentBoolData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
+                    //HookUtils.HookEnter<SceneData, Action<SceneData, PersistentIntData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
+                    //HookUtils.HookEnter<SceneData, Action<SceneData, GeoRockData>>(nameof(SceneData.SaveMyState), OnSceneDataSaveMyState);
+
+                    var saveStateInt = typeof(PersistentIntItem).GetMethod("SaveState", BindingFlags.NonPublic | BindingFlags.Instance);
+                    HookEndpointManager.Modify(saveStateInt, (Action<ILContext>)ModifySaveStateInt);
+
+                    var saveStateBool = typeof(PersistentBoolItem).GetMethod("SaveState", BindingFlags.NonPublic | BindingFlags.Instance);
+                    HookEndpointManager.Modify(saveStateBool, (Action<ILContext>)ModifySaveStateBool);
+
+                    var saveStateGeo = typeof(GeoRock).GetMethod("SaveState", BindingFlags.NonPublic | BindingFlags.Instance);
+                    HookEndpointManager.Modify(saveStateGeo, (Action<ILContext>)ModifySaveStateGeo);
                 }
 
                 //var method = typeof(DeactivateInDarknessWithoutLantern).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
                 //HookEndpointManager.Modify(method, (Action<ILContext>)DeactivateInDarknessWithoutLanternStart);
+                TryParseSyncFiles();
             }
-            TryParseSyncFile();
+
             ApplyEntries();
         }
 
@@ -290,6 +367,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static bool GetFakeNoLantern() => ConfigManager.FakeNoLantern;
 
         private static void ApplyEntries() {
+            if (_syncEntries == null) return;
+
             while (_syncEntries.Count > 0 && _syncEntries.Peek().Time <= Time.unscaledTime) {
                 var entry = _syncEntries.Dequeue();
                 ApplyEntry(entry);
@@ -399,35 +478,43 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
-        private static void TryParseSyncFile() {
-            if (!File.Exists(SyncFile)) {
+        public static void RequestReload() {
+            TryParseSyncFiles();
+        }
+
+        private static void TryParseSyncFiles() {
+            if (!Directory.Exists(PlaybackSystem.Folder)) {
                 //If no sync file, we're not doing syncing
                 return;
             }
 
-            var writeTime = File.GetLastWriteTime(SyncFile);
-            if (writeTime == _lastFileWriteTime) {
-                //If the file hasn't changed, don't bother re-parsing it
-                return;
-            }
+            //var writeTime = File.GetLastWriteTime(SyncFile);
+            //if (writeTime == _lastFileWriteTime) {
+            //    //If the file hasn't changed, don't bother re-parsing it
+            //    return;
+            //}
 
             try {
-                _lastFileWriteTime = writeTime;
                 var currentTime = Time.unscaledTime;
-                using (var stream = File.Open(SyncFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (var reader = new StreamReader(stream)) {
-                    var syncEntries = new Queue<SyncEntry>();
-                    while (!reader.EndOfStream) {
-                        if (TryParseEntry(reader.ReadLine(), out var entry)) {
-                            //Only include entries that are in the future
-                            if (entry.Time >= currentTime) {
-                                syncEntries.Enqueue(entry);
+                var syncEntries = new ListQueue<SyncEntry>(1000);
+
+                foreach (var filename in Directory.GetFiles(PlaybackSystem.Folder, "MultiSync*.txt")) {
+                    using (var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (var reader = new StreamReader(stream)) {
+                        while (!reader.EndOfStream) {
+                            if (TryParseEntry(reader.ReadLine(), out var entry)) {
+                                //Only include entries that are in the future
+                                if (entry.Time >= currentTime) {
+                                    syncEntries.Add(entry);
+                                }
                             }
                         }
                     }
-
-                    _syncEntries = syncEntries;
                 }
+
+                //Sort so that earlier time is later in the list, since de-queueing happens from the end
+                syncEntries.Sort((a, b) => Math.Sign(b.Time - a.Time));
+                _syncEntries = syncEntries;
             } catch (Exception e) {
                 Debug.LogException(e);
             }
@@ -516,7 +603,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Decrement
         }
 
-        private struct SyncEntry {
+        private readonly struct SyncEntry {
             public SyncEntry(float time, SyncType syncType, string tag, float value, Operation operation) {
                 Time = time;
                 SyncType = syncType;

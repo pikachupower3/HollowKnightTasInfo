@@ -288,12 +288,23 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
-        private static void LoadPlaybackFiles() {
+        public static void RequestReload() {
+            //Remove all playback files after the current scene
+            int removeCount = _playback.Count - _sceneIndex - 1;
+            for (int i = 0; i < removeCount; i++) {
+                _playback.RemoveAt(_playback.Count - 1);
+            }
+
+            //Load playback files, but only after the current scene
+            LoadPlaybackFiles(_playback.Count);
+        }
+
+        private static void LoadPlaybackFiles(int skipCount = 0) {
             string playbackPath = "./Playback/RNG";
             if (Directory.Exists(playbackPath)) {
                 var files = Directory.GetFiles(playbackPath);
                 EnablePlayback = files.Length > 0;
-                foreach (var file in files.OrderBy(f => f, StringComparer.InvariantCulture)) {
+                foreach (var file in files.OrderBy(f => f, StringComparer.InvariantCulture).Skip(skipCount)) {
                     LoadPlaybackFile(file);
                 }
             }
