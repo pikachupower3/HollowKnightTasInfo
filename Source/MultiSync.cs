@@ -33,9 +33,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static bool _applyingEntry;
         private static bool _initialized;
 
+        private static SaveAndQuitState _saveAndQuitState;
         private static int _lastPersistedInt;
         private static bool _lastPersistedBool;
         private static int _lastPersistedGeoRock;
+        
 
         public static void Init() {
             _filteredPlayerDataBools.Add("disablePause");
@@ -345,6 +347,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
                     var saveStateGeo = typeof(GeoRock).GetMethod("SaveState", BindingFlags.NonPublic | BindingFlags.Instance);
                     HookEndpointManager.Modify(saveStateGeo, (Action<ILContext>)ModifySaveStateGeo);
+
+                    //Keep track of whether we're in save+quit
+                    HookUtils.HookEnter<GameManager, Action<GameManager>>(nameof(GameManager.ReturnToMainMenu), OnGameManagerReturnToMainMenu);
+                    HookUtils.HookEnter<GameManager, Action<GameManager, int>>(nameof(GameManager.SaveGame), OnGameManagerSaveGame);
+                    HookUtils.HookExit<GameManager, Action<GameManager, int>>(nameof(GameManager.LoadGame), OnGameManagerLoadGame);
                 }
 
                 //var method = typeof(DeactivateInDarknessWithoutLantern).GetMethod("Start", BindingFlags.Public | BindingFlags.Instance);
@@ -352,7 +359,28 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 TryParseSyncFiles();
             }
 
-            ApplyEntries();
+            //Only apply flags if we're not in the middle of a save+quit
+            //Any flag updates in the that time will accumulate and then all be applied at once after the game is loaded
+            if (_saveAndQuitState != SaveAndQuitState.WaitingForLoad) {
+                ApplyEntries();
+            }
+        }
+
+        private static void OnGameManagerLoadGame(GameManager self, int slot) {
+            //After any load, we consider the game to be in a state where we can apply flags
+            _saveAndQuitState = SaveAndQuitState.None;
+        }
+
+        private static void OnGameManagerSaveGame(GameManager self, int slot) {
+            //We only want to stop applying flags if we're issuing a Save due to quitting to menu
+            if (_saveAndQuitState == SaveAndQuitState.ReturningToMenu) {
+                _saveAndQuitState = SaveAndQuitState.WaitingForLoad;
+            }
+        }
+
+        private static void OnGameManagerReturnToMainMenu(GameManager self) {
+            //We keep applying flags up until the point that the game is actually saved
+            _saveAndQuitState = SaveAndQuitState.ReturningToMenu;
         }
 
         private static void DeactivateInDarknessWithoutLanternStart(ILContext il) {
@@ -589,6 +617,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             return _syncTypeMap.TryGetValue(syncTypeText.ToLower(), out syncType);
         }
 
+        private enum SaveAndQuitState {
+            None,
+            ReturningToMenu,
+            WaitingForLoad
+        }
         private enum SyncType {
             None,
             Geo,
