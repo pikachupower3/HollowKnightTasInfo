@@ -276,7 +276,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 bool geoConsolidating = false;
                 float geoStartTime = 0;
                 float geoAmount = 0;
-
+                float lastTime = 0;
                 foreach (var entry in _syncRecord) {
                     if (entry.SyncType == SyncType.Geo && consolidateGeo) {
                         if (!geoConsolidating) {
@@ -288,11 +288,14 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                             var endGeo = (int)Math.Ceiling(geoStartTime + geoWindow);
                             if (entry.Time - endGeo >= 0) {
                                 writer.WriteLine($"{TimeStr(endGeo)},Geo,{geoAmount}");
-                            }
 
-                            //Start the next consolidation window
-                            geoStartTime = entry.Time;
-                            geoAmount = entry.Value;
+                                //Start the next consolidation window
+                                geoStartTime = entry.Time;
+                                geoAmount = entry.Value;
+                            } else {
+                                //Add to the consolidation pool
+                                geoAmount += entry.Value;
+                            }
                         }
                     } else {
                         if (consolidateGeo) {
@@ -306,11 +309,12 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                         }
                         writer.WriteLine(entry.ToString());
                     }
+                    lastTime = entry.Time;
                 }
 
                 //At the end, write out any remaining geo from consolidation
                 if (geoConsolidating) {
-                    writer.WriteLine($"{TimeStr(Time.unscaledTime)},Geo,{geoAmount}");
+                    writer.WriteLine($"{TimeStr(lastTime)},Geo,{geoAmount}");
                 }
             }
         }
