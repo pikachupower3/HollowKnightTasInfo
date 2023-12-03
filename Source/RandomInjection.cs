@@ -90,11 +90,25 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (rwiMethods.Any(m => m == null))
                 Debug.Log("One or more RWI-using methods failed to bind");
 
+            //Suppress the nuisance log message that spams the Player.log, making it hard to see more useful messages
+            var fsmMethod = typeof(PlayMakerFSM).GetMethod("AddEventHandlerComponents", BindingFlags.Public | BindingFlags.Instance);
+            HookEndpointManager.Modify(fsmMethod, (Action<ILContext>)FsmSuppressLog);
+
             _playback = new List<Dictionary<string, PlaybackState>>();
             _recording = new List<Dictionary<string, List<float>>>();
 
             if (EnablePlayback)
                 LoadPlaybackFiles();
+        }
+
+        private static void FsmSuppressLog(ILContext il) {
+            var c = new ILCursor(il);
+
+            //There's a call followed by a Br.true, so we just want to skip the call and provide true to the branch
+            //This will jump over the nuisance log call
+            c.Index++;
+            c.Emit(OpCodes.Pop);
+            c.Emit(OpCodes.Ldc_I4, 1);
         }
 
         private static void AddRandomCalls(List<MethodInfo> targetMethods) {

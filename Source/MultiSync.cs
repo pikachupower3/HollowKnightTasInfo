@@ -530,7 +530,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 var currentTime = Time.unscaledTime;
                 var syncEntries = new ListQueue<SyncEntry>(1000);
 
-                foreach (var filename in Directory.GetFiles(PlaybackSystem.Folder, "MultiSync*.txt")) {
+                foreach (var filename in Directory.GetFiles(PlaybackSystem.Folder, "*.txt").Where(f => Path.GetFileName(f).StartsWith("MultiSync"))) {
                     using (var stream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (var reader = new StreamReader(stream)) {
                         while (!reader.EndOfStream) {
