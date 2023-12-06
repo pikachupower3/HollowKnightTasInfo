@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using Assembly_CSharp.TasInfo.mm.Source.Utils;
 using HutongGames.PlayMaker;
 using HutongGames.PlayMaker.Actions;
@@ -23,6 +24,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static MethodInfo _getRwi;
         private static List<Dictionary<string, PlaybackState>> _playback;
         private static List<Dictionary<string, List<float>>> _recording;
+        private static Dictionary<object, string> _objectIds;
         private static List<string> _detailLog;
         private static List<string> _sceneNames;
         private static object _lock;
@@ -96,6 +98,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             _playback = new List<Dictionary<string, PlaybackState>>();
             _recording = new List<Dictionary<string, List<float>>>();
+            _objectIds = new Dictionary<object, string>();
 
             if (EnablePlayback)
                 LoadPlaybackFiles();
@@ -429,6 +432,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     _detailLog.Add("### Scene: " + name);
                     _detailLog.Add("");
                 }
+
+                //Object tracking is on a per-scene basis
+                _objectIds.Clear();
             }
 
             if (_nextSceneRollCount > 0) {
@@ -592,30 +598,43 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
+        private static string GetObjectId(GameObject obj) {
+            if (obj == null) return "X";
+
+            if (!_objectIds.TryGetValue(obj, out var id)) {
+                var posPrefix = $"X{obj.transform.position.x:0.00}:Y{obj.transform.position.y:0.00}";
+                var existingCount = _objectIds.Values.Count(x => x.StartsWith(posPrefix));
+                id = $"{posPrefix}:{existingCount + 1}";
+                _objectIds.Add(obj, id);
+            }
+
+            return id;
+        }
+
         public static float OnRangeFloatMB(float min, float max, string name, MonoBehaviour component) {
-            var id = component.gameObject.GetInstanceID();
+            var id = GetObjectId(component.gameObject);
             return OnRangeFloat(min, max, $"[{id}]{name}");
         }
 
         public static int OnRangeIntMB(int min, int max, string name, MonoBehaviour component) {
-            var id = component.gameObject.GetInstanceID();
+            var id = GetObjectId(component.gameObject);
             return OnRangeInt(min, max, $"[{id}]{name}");
         }
 
         public static float OnRangeFloatFsm(float min, float max, string name, FsmStateAction action) {
-            var id = action.Fsm?.GameObject?.GetInstanceID() ?? 0;
+            var id = GetObjectId(action.Fsm?.GameObject);
             return OnRangeFloat(min, max, $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
         }
 
         public static int OnRangeIntFsm(int min, int max, string name, FsmStateAction action) {
-            var id = action.Fsm?.GameObject?.GetInstanceID() ?? 0;
+            var id = GetObjectId(action.Fsm?.GameObject);
             return OnRangeInt(min, max, $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
         }
 
         public static int OnGetRwiFsm(FsmFloat[] weights, string name, FsmStateAction action) {
             lock (_lock) {
                 CheckScene();
-                var id = action.Fsm?.GameObject?.GetInstanceID() ?? 0;
+                var id = GetObjectId(action.Fsm?.GameObject);
                 var compName = $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}";
                 int result;
                 if (EnablePlayback && TryGetPlayback(compName, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
