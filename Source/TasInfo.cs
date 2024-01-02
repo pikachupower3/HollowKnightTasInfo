@@ -89,6 +89,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             HitboxInfo.OnPreRender(gameManager, infoBuilder);
             RngInfo.OnPreRender(infoBuilder);
             DiagnosticsLogger.OnPreRender();
+            PlaybackSystem.OnPreRender();
             MultiSync.OnPreRender();
 
             // At this point the TasInfo string should have been constructed - now we have the patch_GameManager write out the addr to the special page for the lua script.

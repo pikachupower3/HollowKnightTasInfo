@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
@@ -14,9 +14,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 desyncFrame = Time.frameCount;
             }
 
-            if (desyncFrame > 0) {
-                infoBuilder.Append($"desync at frame {desyncFrame}");
-            }
+            //This is disabled, as it can be triggered by some features of the new tooling
+            //It's just intended to check that the tooling itself doesn't cause rng to change
+            //if (desyncFrame > 0) {
+            //    infoBuilder.Append($"desync at frame {desyncFrame}");
+            //}
         }
     }
 }

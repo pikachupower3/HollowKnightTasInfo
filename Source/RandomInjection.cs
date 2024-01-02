@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using Assembly_CSharp.TasInfo.mm.Source.Utils;
 using HutongGames.PlayMaker;
 using HutongGames.PlayMaker.Actions;
@@ -12,6 +13,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour.HookGen;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using Debug = UnityEngine.Debug;
 
@@ -22,12 +24,12 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static MethodInfo _getRwi;
         private static List<Dictionary<string, PlaybackState>> _playback;
         private static List<Dictionary<string, List<float>>> _recording;
+        private static Dictionary<object, string> _objectIds;
         private static List<string> _detailLog;
         private static List<string> _sceneNames;
         private static object _lock;
         private static int _sceneIndex;
         private static int _nextSceneRollCount;
-        private static bool _useLegacyRngSync;
 
         public static bool EnablePlayback;
         public static bool EnableRecording;
@@ -43,7 +45,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             EnableRecording = true;
             EnableDetailLogging = false;
             EnablePlayback = true;
-            _useLegacyRngSync = ConfigManager.UseLegacyRngSync;
             _sceneIndex = 0;
             _sceneNames.Add("Start");
 
@@ -60,7 +61,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             foreach (var method in targetMethods.Where(m => m != null)) {
                 if (typeof(FsmStateAction).IsAssignableFrom(method.DeclaringType)) {
                     InjectOnRangeFsm(method);
-                } else {
+                } else if (typeof(MonoBehaviour).IsAssignableFrom(method.DeclaringType) && !method.IsStatic) {
+                    InjectOnRangeMB(method);
+                }
+                else {
                     InjectOnRange(method);
                 }
             }
@@ -88,11 +92,26 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (rwiMethods.Any(m => m == null))
                 Debug.Log("One or more RWI-using methods failed to bind");
 
+            //Suppress the nuisance log message that spams the Player.log, making it hard to see more useful messages
+            var fsmMethod = typeof(PlayMakerFSM).GetMethod("AddEventHandlerComponents", BindingFlags.Public | BindingFlags.Instance);
+            HookEndpointManager.Modify(fsmMethod, (Action<ILContext>)FsmSuppressLog);
+
             _playback = new List<Dictionary<string, PlaybackState>>();
             _recording = new List<Dictionary<string, List<float>>>();
+            _objectIds = new Dictionary<object, string>();
 
             if (EnablePlayback)
                 LoadPlaybackFiles();
+        }
+
+        private static void FsmSuppressLog(ILContext il) {
+            var c = new ILCursor(il);
+
+            //There's a call followed by a Br.true, so we just want to skip the call and provide true to the branch
+            //This will jump over the nuisance log call
+            c.Index++;
+            c.Emit(OpCodes.Pop);
+            c.Emit(OpCodes.Ldc_I4, 1);
         }
 
         private static void AddRandomCalls(List<MethodInfo> targetMethods) {
@@ -286,12 +305,23 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
-        private static void LoadPlaybackFiles() {
+        public static void RequestReload() {
+            //Remove all playback files after the current scene
+            int removeCount = _playback.Count - _sceneIndex - 1;
+            for (int i = 0; i < removeCount; i++) {
+                _playback.RemoveAt(_playback.Count - 1);
+            }
+
+            //Load playback files, but only after the current scene
+            LoadPlaybackFiles(_playback.Count);
+        }
+
+        private static void LoadPlaybackFiles(int skipCount = 0) {
             string playbackPath = "./Playback/RNG";
             if (Directory.Exists(playbackPath)) {
                 var files = Directory.GetFiles(playbackPath);
                 EnablePlayback = files.Length > 0;
-                foreach (var file in files.OrderBy(f => f, StringComparer.InvariantCulture)) {
+                foreach (var file in files.OrderBy(f => f, StringComparer.InvariantCulture).Skip(skipCount)) {
                     LoadPlaybackFile(file);
                 }
             }
@@ -402,6 +432,9 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     _detailLog.Add("### Scene: " + name);
                     _detailLog.Add("");
                 }
+
+                //Object tracking is on a per-scene basis
+                _objectIds.Clear();
             }
 
             if (_nextSceneRollCount > 0) {
@@ -420,6 +453,10 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         private static void InjectOnRange(MethodInfo method) {
             HookEndpointManager.Modify(method, (Action<ILContext>)InjectOnRange);
+        }
+
+        private static void InjectOnRangeMB(MethodInfo method) {
+            HookEndpointManager.Modify(method, (Action<ILContext>)InjectOnRangeMB);
         }
 
         private static void InjectOnRangeFsm(MethodInfo method) {
@@ -444,6 +481,25 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 c.Remove();
                 c.Emit(OpCodes.Ldstr, name);
                 c.Emit(OpCodes.Call, typeof(RandomInjection).GetMethod("OnRangeInt", BindingFlags.Public | BindingFlags.Static));
+            }
+        }
+
+        private static void InjectOnRangeMB(ILContext il) {
+            var name = TrimNamespace(il.Method.Name);
+            var c = new ILCursor(il);
+            while (c.TryGotoNext(MoveType.Before, x => x.MatchCall(_rangeFloat))) {
+                c.Remove();
+                c.Emit(OpCodes.Ldstr, name);
+                c.Emit(OpCodes.Ldarg_0);
+                c.Emit(OpCodes.Call, typeof(RandomInjection).GetMethod("OnRangeFloatMB", BindingFlags.Public | BindingFlags.Static));
+            }
+
+            c.Goto(0);
+            while (c.TryGotoNext(MoveType.Before, x => x.MatchCall(_rangeInt))) {
+                c.Remove();
+                c.Emit(OpCodes.Ldstr, name);
+                c.Emit(OpCodes.Ldarg_0);
+                c.Emit(OpCodes.Call, typeof(RandomInjection).GetMethod("OnRangeIntMB", BindingFlags.Public | BindingFlags.Static));
             }
         }
 
@@ -481,7 +537,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         private static string TrimNamespace(string name) {
-            var playMakerNs = "HutongGames.PlayMaker.Actions.";
+            const string playMakerNs = "HutongGames.PlayMaker.Actions.";
             if (name.StartsWith(playMakerNs))
                 name = name.Substring(playMakerNs.Length);
 
@@ -496,10 +552,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 if (EnablePlayback && TryGetPlayback(name, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
                     result = playbackState.Values[playbackState.Index - 1];
-                    if (!_useLegacyRngSync) {
-                        //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
-                        var discard = UnityEngine.Random.Range(min, max);
-                    }
+                    //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
+                    var discard = UnityEngine.Random.Range(min, max);
                 } else {
                     result = UnityEngine.Random.Range(min, max);
                 }
@@ -525,10 +579,8 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                 if (EnablePlayback && TryGetPlayback(name, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
                     result = (int)playbackState.Values[playbackState.Index - 1];
-                    if (!_useLegacyRngSync) {
-                        //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
-                        var discard = UnityEngine.Random.Range(min, max);
-                    }
+                    //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
+                    var discard = UnityEngine.Random.Range(min, max);
                 } else {
                     result = UnityEngine.Random.Range(min, max);
                 }
@@ -546,26 +598,50 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
+        private static string GetObjectId(GameObject obj) {
+            if (obj == null) return "X";
+
+            if (!_objectIds.TryGetValue(obj, out var id)) {
+                var posPrefix = $"X{obj.transform.position.x:0.00}:Y{obj.transform.position.y:0.00}";
+                var existingCount = _objectIds.Values.Count(x => x.StartsWith(posPrefix));
+                id = $"{posPrefix}:{existingCount + 1}";
+                _objectIds.Add(obj, id);
+            }
+
+            return id;
+        }
+
+        public static float OnRangeFloatMB(float min, float max, string name, MonoBehaviour component) {
+            var id = GetObjectId(component.gameObject);
+            return OnRangeFloat(min, max, $"[{id}]{name}");
+        }
+
+        public static int OnRangeIntMB(int min, int max, string name, MonoBehaviour component) {
+            var id = GetObjectId(component.gameObject);
+            return OnRangeInt(min, max, $"[{id}]{name}");
+        }
+
         public static float OnRangeFloatFsm(float min, float max, string name, FsmStateAction action) {
-            return OnRangeFloat(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
+            var id = GetObjectId(action.Fsm?.GameObject);
+            return OnRangeFloat(min, max, $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
         }
 
         public static int OnRangeIntFsm(int min, int max, string name, FsmStateAction action) {
-            return OnRangeInt(min, max, $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
+            var id = GetObjectId(action.Fsm?.GameObject);
+            return OnRangeInt(min, max, $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}");
         }
 
         public static int OnGetRwiFsm(FsmFloat[] weights, string name, FsmStateAction action) {
             lock (_lock) {
                 CheckScene();
-                var compName = $"[{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}";
+                var id = GetObjectId(action.Fsm?.GameObject);
+                var compName = $"[{id}/{action.Fsm?.GameObjectName ?? ""}/{action.Fsm?.Name ?? ""}/{action.State?.Name ?? ""}]{name}";
                 int result;
                 if (EnablePlayback && TryGetPlayback(compName, out var playbackState) && playbackState.Index < playbackState.Values.Count) {
                     playbackState.Index++;
                     result = (int)playbackState.Values[playbackState.Index - 1];
-                    if (!_useLegacyRngSync) {
-                        //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
-                        var discard = ActionHelpers.GetRandomWeightedIndex(weights);
-                    }
+                    //Improve edge case sync by calling Random so that seed progression should match even when using playback ideally
+                    var discard = ActionHelpers.GetRandomWeightedIndex(weights);
                 } else {
                     result = ActionHelpers.GetRandomWeightedIndex(weights);
                 }

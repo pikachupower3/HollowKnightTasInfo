@@ -36,6 +36,7 @@ UseLegacyRngSync = false
 StartingGameTime = 0
 PauseTimer = false
 RecordMultiSync = false
+MultiSyncConsolidateGeo = false
 
 # 碰撞箱颜色 ARGB 格式，注释或删除则不显示该类 hitbox
 KnightHitbox = 0xFF00FF00
@@ -91,7 +92,6 @@ DisableCameraShake = false
         public static bool ForceGatheringSwarm => GetSettingValue(nameof(ForceGatheringSwarm), false);
         public static bool GiveLantern => GetSettingValue(nameof(GiveLantern), false);
         public static bool FakeNoLantern => GetSettingValue(nameof(FakeNoLantern), false);
-        public static bool UseLegacyRngSync => GetSettingValue(nameof(UseLegacyRngSync), true);
         public static bool PauseTimer => GetSettingValue(nameof(PauseTimer), false);
         public static float CameraZoom => Enabled ? GetSettingValue(nameof(CameraZoom), 1f) : 1f;
         public static bool CameraFollow => Enabled && GetSettingValue<bool>(nameof(CameraFollow));
@@ -101,6 +101,8 @@ DisableCameraShake = false
         public static int StartingSoul => GetSettingValue<int>(nameof(StartingSoul));
         public static int StartingHealth => GetSettingValue<int>(nameof(StartingHealth));
         public static bool RecordMultiSync => GetSettingValue<bool>(nameof(RecordMultiSync), false);
+        public static string MultiSyncName => GetSettingValue<string>(nameof(MultiSyncName), "");
+        public static bool MultiSyncConsolidateGeo => GetSettingValue<bool>(nameof(MultiSyncConsolidateGeo), false);
 
         public static string GetHitboxColorValue(HitboxInfo.HitboxType hitboxType) {
             return GetSettingValue($"{hitboxType}Hitbox", string.Empty);
