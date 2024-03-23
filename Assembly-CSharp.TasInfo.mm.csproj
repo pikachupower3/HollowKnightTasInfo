@@ -122,6 +122,7 @@
         <Copy SourceFiles="$(SolutionDir)/README.md" DestinationFiles="$(OutputDir)/README.md" />
         <Copy SourceFiles="$(SolutionDir)/HollowKnightTasInfo.config" DestinationFiles="$(OutputDir)/HollowKnightTasInfo.config" />
         <Copy SourceFiles="$(SolutionDir)/HollowKnightTasInfo.lua" DestinationFiles="$(OutputDir)/HollowKnightTasInfo.lua" />
+        <Copy SourceFiles="$(SolutionDir)/HollowKnightTasInfo_v2.lua" DestinationFiles="$(OutputDir)/HollowKnightTasInfo_v2.lua" />
         <Copy SourceFiles="$(TargetDir)MONOMODDED_Assembly-CSharp.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/Assembly-CSharp.dll" />
         <Copy SourceFiles="$(TargetDir)Assembly-CSharp.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/original/Assembly-CSharp.dll" />
         <Copy SourceFiles="$(TargetDir)MonoMod.RuntimeDetour.dll" DestinationFiles="$(OutputDir)/hollow_knight_Data/Managed/MonoMod.RuntimeDetour.dll" />
@@ -139,6 +140,7 @@
         <Copy SourceFiles="$(SolutionDir)/README.md" DestinationFiles="$(TempOutputDir)/README.md" />
         <Copy SourceFiles="$(SolutionDir)/HollowKnightTasInfo.config" DestinationFiles="$(TempOutputDir)/HollowKnightTasInfo.config" />
         <Copy SourceFiles="$(SolutionDir)/HollowKnightTasInfo.lua" DestinationFiles="$(TempOutputDir)/HollowKnightTasInfo.lua" />
+        <Copy SourceFiles="$(SolutionDir)/HollowKnightTasInfo_v2.lua" DestinationFiles="$(TempOutputDir)/HollowKnightTasInfo_v2.lua" />
         <Copy SourceFiles="$(TargetDir)MONOMODDED_Assembly-CSharp.dll" DestinationFiles="$(TempOutputDir)/hollow_knight_Data/Managed/Assembly-CSharp.dll" />
         <Copy SourceFiles="$(TargetDir)Assembly-CSharp.dll" DestinationFiles="$(TempOutputDir)/hollow_knight_Data/Managed/original/Assembly-CSharp.dll" />
     </Target>

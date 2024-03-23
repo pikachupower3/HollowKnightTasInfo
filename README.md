@@ -20,12 +20,14 @@ for integration on the libTAS side.
 
 ##  Basic Usage
 
-While the game is running in libTAS, click on the `Tools | Lua | Execute Lua Script...` menu item.  This will
-bring up a file dialog; choose the `HollowKnightTasInfo.lua` file that was copied into your HK installation.
-The tooling is now running and will provide information to the libTAS OSD.  It only loads after the main menu is
-loaded, so if you don't see anything, allow the game to run until the main menu loads.  If you still don't see
-anything, make sure the `Video | OSD | Lua` option is enabled.  Any setting changes will require stepping forward
-at least one frame to be visible.
+While the game is running in libTAS, click on the `Tools | Lua Console...` menu item.  From there, click
+the `Script | Add script file` menu item.  This will bring up a file dialog; choose the `HollowKnightTasInfo.lua` 
+or `HollowKnightTasInfo_v2.lua` file that was copied into your HK installation.  The first is used for backwards 
+compatibility with older patches of libTAS, while the latter supports additional features like disabling fast forward 
+during loads.  The latter only works in versions of libTAS at interim build f69140c or later.  The tooling is now running 
+and will provide information to the libTAS OSD.  It only loads after the main menu is loaded, so if you don't see anything, 
+allow the game to run until the main menu loads.  If you still don't see anything, make sure the `Video | OSD | Lua` 
+option is enabled.  Any setting changes will require stepping forward at least one frame to be visible.
 
 While the tooling is running, you can update the configuration at any time by editing the `HollowKnightTasInfo.config`
 file at runtime.  The tooling will automatically reload the configuration file when it detects a change.  This allows
@@ -103,6 +105,10 @@ feature is described in more detail later in this document.
 several TAS instances to keep track of which recording maps to which knight.
 * `MultiSyncConsolidateGeo`: Whether to consolidate geo updates when recording synchronization information.  
 When this is false, every individual piece of geo gets its own entry.
+* `DisableFFDuringLoads`: Whether to disable fast forward during loads.  This is only supported in libTAS interim builds
+after commit f69140c using the newer lua script.  This can help improve sync stability, particularly on patch 1432.  Take
+care when setting savestates near to loads while using this feature, as a savestate inside a non-FF zone might
+preempt the fast forward protection, especially if immediately adjacent to the actual scene change.
 
 ## Logging features
 

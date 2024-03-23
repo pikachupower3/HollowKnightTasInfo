@@ -38,6 +38,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         private static GameState lastGameState;
         private static bool lookForTeleporting;
+        private static bool wasLoading;
 
         public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             string currentScene = gameManager.sceneName;
@@ -84,6 +85,26 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     nextScene != currentScene
                     || minorVersion < 3 && (bool)TilemapDirtyFieldInfo.GetValue(gameManager)
                     || ConfigManager.PauseTimer;
+
+                var isLoading = gameState == GameState.EXITING_LEVEL ||
+                                gameState == GameState.ENTERING_LEVEL ||
+                                gameState == GameState.LOADING;
+
+                var infoFlags = TasInfoFlags.None;
+                if (ConfigManager.DisableFFDuringLoads) {
+                    if (isLoading && !wasLoading) {
+                        infoFlags |= TasInfoFlags.SetFFUnsafe;
+                    } else if (!isLoading && wasLoading) {
+                        infoFlags |= TasInfoFlags.SetFFSafe;
+                    }
+
+                    if (isLoading) {
+                        infoFlags |= TasInfoFlags.IsFFUnsafe;
+                    }
+                }
+                wasLoading = isLoading;
+
+                patch_GameManager.InfoFlags = (int)infoFlags;
             } catch {
                 // ignore
             }

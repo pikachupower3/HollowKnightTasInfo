@@ -19,6 +19,7 @@ class patch_GameManager : GameManager {
     private static IntPtr tasPageAddr = IntPtr.Zero;
     public static readonly long TasInfoMark = 1234567890123456789;
     public static string TasInfo;
+    public static int InfoFlags;
 
     //[MonoModIgnore]
     //public extern void orig_LeftScene(bool doAdditiveLoad);
