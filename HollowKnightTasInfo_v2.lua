@@ -3,7 +3,11 @@ function onPaint()
 	local screenWidth, screenHeight = gui.resolution()
 	
     if infoAddress == 0 then
-        gui.text(screenWidth - 5, 5, "info not found", 0xffffffff, 1, 0, 16, 1)
+        gui.text(screenWidth - 6, 5, "0.00", 0xff000000, 1, 0, 16, 1)
+        gui.text(screenWidth - 5, 6, "0.00", 0xff000000, 1, 0, 16, 1)
+        gui.text(screenWidth - 4, 5, "0.00", 0xff000000, 1, 0, 16, 1)
+        gui.text(screenWidth - 5, 4, "0.00", 0xff000000, 1, 0, 16, 1)
+        gui.text(screenWidth - 5, 5, "0.00", 0xffffffff, 1, 0, 16, 1)
         return
     end
 
@@ -23,7 +27,7 @@ function onPaint()
         elseif line:find("^CircleHitbox=") ~= nil then
             local hitboxData = splitString(line:sub(14), "|")
             for i = 1, #hitboxData, 4 do
-                gui.ellipse(hitboxData[i], hitboxData[i + 1], hitboxData[i + 2], hitboxData[i + 2], hitboxData[i + 3])
+                gui.ellipse(hitboxData[i], hitboxData[i + 1], hitboxData[i + 2], hitboxData[i + 2], 1, hitboxData[i + 3])
             end
         else
             table.insert(gameInfo, line)
@@ -36,6 +40,10 @@ end
 function drawGameInfo(textArray)
     local screenWidth, screenHeight = gui.resolution()
     for i, v in ipairs(textArray) do
+        gui.text(screenWidth - 6, 5 + 23 * (i - 1), v, 0xff000000, 1, 0, 16, 1)
+        gui.text(screenWidth - 5, 6 + 23 * (i - 1), v, 0xff000000, 1, 0, 16, 1)
+        gui.text(screenWidth - 4, 5 + 23 * (i - 1), v, 0xff000000, 1, 0, 16, 1)
+        gui.text(screenWidth - 5, 4 + 23 * (i - 1), v, 0xff000000, 1, 0, 16, 1)
         gui.text(screenWidth - 5, 5 + 23 * (i - 1), v, 0xffffffff, 1, 0, 16, 1)
     end
 end
@@ -91,7 +99,7 @@ function onFrame()
 	if not (tasFlags & 1 == 0) then
 		-- Observed the start of unsafe FF zone
 		print("start unsafe zone")
-		wasFF = runtime.isFastForward()
+		wasFF = runtime.isFastForward() > 0
 		if wasFF then
 			runtime.setFastForward(0)
 		end
@@ -105,9 +113,9 @@ function onFrame()
 		unsafeStarted = false
 	elseif not (tasFlags & 4 == 0) then
 		--Currently in an unsafe FF zone
-		local isFF = runtime.isFastForward()
+		local isFF = runtime.isFastForward() > 0
 		if isFF and not unsafeStarted then
-            print("mid unsafe zone")
+            		print("mid unsafe zone")
 			wasFF = true
 			runtime.setFastForward(0)
 			unsafeStarted = true

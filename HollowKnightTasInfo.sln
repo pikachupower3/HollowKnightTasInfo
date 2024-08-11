@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31829.152
@@ -11,6 +11,8 @@ Global
 		v1028|Any CPU = v1028|Any CPU
 		v1221|Any CPU = v1221|Any CPU
 		v1432|Any CPU = v1432|Any CPU
+		v1575|Any CPU = v1575|Any CPU
+		v1578|Any CPU = v1578|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{45699EED-E8CE-4B17-9B91-CB721B84D493}.v1028_Krythom|Any CPU.ActiveCfg = v1028_Krythom|Any CPU
@@ -21,6 +23,10 @@ Global
 		{45699EED-E8CE-4B17-9B91-CB721B84D493}.v1221|Any CPU.Build.0 = v1221|Any CPU
 		{45699EED-E8CE-4B17-9B91-CB721B84D493}.v1432|Any CPU.ActiveCfg = v1432|Any CPU
 		{45699EED-E8CE-4B17-9B91-CB721B84D493}.v1432|Any CPU.Build.0 = v1432|Any CPU
+		{45699EED-E8CE-4B17-9B91-CB721B84D493}.v1575|Any CPU.ActiveCfg = v1575|Any CPU
+		{45699EED-E8CE-4B17-9B91-CB721B84D493}.v1575|Any CPU.Build.0 = v1575|Any CPU
+		{45699EED-E8CE-4B17-9B91-CB721B84D493}.v1578|Any CPU.ActiveCfg = v1578|Any CPU
+		{45699EED-E8CE-4B17-9B91-CB721B84D493}.v1578|Any CPU.Build.0 = v1578|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
