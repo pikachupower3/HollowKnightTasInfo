@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Assembly_CSharp.TasInfo.mm.Source.Extensions;
@@ -68,7 +68,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
                 if (((PhysLayers) gameObject.layer is PhysLayers.ENEMIES or PhysLayers.HERO_ATTACK || gameObject.CompareTag("Boss"))
                     && IgnoreObjectNames.All(name => !gameObject.name.StartsWith(name))) {
-#if V1432
+#if V1432 || V1575 || V1578
                     if (gameObject.GetComponent<HealthManager>() is {} healthManager) {
                         EnemyPool.Add(gameObject, new EnemyData(gameObject, healthManager));
                     }
@@ -93,7 +93,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private class EnemyData {
             private readonly GameObject gameObject;
             private readonly Rigidbody2D rigidbody2D;
-#if V1432
+#if V1432 || V1575 || V1578
             private readonly HealthManager healthManager;
             private int Hp => healthManager.hp;
 
