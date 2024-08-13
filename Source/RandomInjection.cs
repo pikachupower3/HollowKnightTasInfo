@@ -120,7 +120,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Add(targetMethods, typeof(WaterDrip).GetMethod("Update", allFlags));
             Add(targetMethods, typeof(PushableRubble).GetMethod("OnEnable", allFlags));
 #endif
-#if V1221 || V1432
+#if V1221 || V1432 || V1575 || V1578
             Add(targetMethods, typeof(Breakable).GetMethod("Break", allFlags));
             Add(targetMethods, typeof(Breakable).GetMethod("SpawnNailHitEffect", allFlags));
             Add(targetMethods, typeof(BreakableInfectedVine).GetMethod("OnTriggerEnter2D", allFlags));
@@ -162,7 +162,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             Add(targetMethods, typeof(PlayFromRandomFrameMecanim).GetNestedType("<DelayStart>c__IteratorA", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
             Add(targetMethods, typeof(HeroController).GetNestedType("<CheckForTerrainThunk>c__Iterator1C", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
 #endif
-#if V1432
+#if V1432 || V1575 || V1578
             Add(targetMethods, typeof(PlayFromRandomFrameMecanim).GetNestedType("<DelayStart>c__Iterator0", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
             Add(targetMethods, typeof(HeroController).GetNestedType("<CheckForTerrainThunk>c__IteratorB", BindingFlags.NonPublic)?.GetMethod("MoveNext", allFlags));
             Add(targetMethods, typeof(BigCentipede).GetMethod("Awake", allFlags));
