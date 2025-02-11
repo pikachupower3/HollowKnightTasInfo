@@ -53,7 +53,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
 
             if (timeStart && !timeEnd && (nextScene.StartsWith("Cinematic_Ending", StringComparison.OrdinalIgnoreCase) ||
-                                          nextScene == "GG_End_Sequence")) {
+                                          (nextScene == "GG_End_Sequence" && ConfigManager.TimerEndPantheon))) {
                 timeEnd = true;
             }
 
