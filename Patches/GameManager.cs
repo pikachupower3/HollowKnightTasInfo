@@ -125,9 +125,10 @@ class patch_GameManager : GameManager {
     }
 #endif
 
-        public extern void orig_SetupSceneRefs(bool refreshTilemapInfo);
+    [MonoModIgnore]
+    public extern void orig_SetupSceneRefs(bool refreshTilemapInfo);
 
-    public void SetupSceneRefs(bool refreshTilemapInfo)
+    new public void SetupSceneRefs(bool refreshTilemapInfo)
     {
         orig_SetupSceneRefs(refreshTilemapInfo);
 

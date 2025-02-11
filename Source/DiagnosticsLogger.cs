@@ -21,7 +21,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         public static string LastScene => _instance?._lastScene ?? "";
 
-        public const bool OutputCombinedLog = false;
+        public readonly bool OutputCombinedLog = false;
+
+        public DiagnosticsLogger(bool combineOutputLog = false) {
+            OutputCombinedLog = combineOutputLog;
+        }
 
         public static void OnInit() {
             _instance = new DiagnosticsLogger();

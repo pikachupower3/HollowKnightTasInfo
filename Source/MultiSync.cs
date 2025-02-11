@@ -672,7 +672,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
                     case SyncType.SceneData:
                         return $"{TimeStr(Time)},SceneData.{Tag},{Value}";
-                        break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
