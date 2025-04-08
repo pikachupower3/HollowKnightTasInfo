@@ -22,7 +22,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         public static float GroundedTime;
         private static bool hasStarted;
 
-        public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        public static void OnPreCull(GameManager gameManager, StringBuilder infoBuilder) {
             if (gameManager.hero_ctrl is { } heroController) {
                 if (ConfigManager.ShowKnightInfo) {
                     Vector3 position = heroController.transform.position;

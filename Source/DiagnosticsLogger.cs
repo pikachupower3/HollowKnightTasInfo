@@ -78,7 +78,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             _estRealFrame = 0;
         }
 
-        public static void OnPreRender() {
+        public static void OnPreCull() {
             _instance.Update();
         }
 

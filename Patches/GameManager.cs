@@ -8,6 +8,7 @@ using Assembly_CSharp.TasInfo.mm.Source;
 using Mono.Cecil;
 using MonoMod;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 // for P/Invoke
 using System.Runtime.InteropServices;
@@ -121,10 +122,46 @@ class patch_GameManager : GameManager {
     private extern void orig_ManualLevelStart();
     private void ManualLevelStart() {
         orig_ManualLevelStart();
+        Minidebug.loadzones = UnityEngine.Object.FindObjectsOfType<TransitionPoint>();
         Assembly_CSharp.TasInfo.mm.Source.TasInfo.AfterManualLevelStart();
+    }
+
+    [MonoModIgnore] private bool tilemapDirty;
+    [MonoModIgnore] private bool waitForManualLevelStart;
+    [MonoModIgnore] private new event DestroyPooledObjects DestroyPersonalPools;
+    [MonoModIgnore] private new event UnloadLevel UnloadingLevel;
+    [MonoModIgnore] private new event LevelReady NextLevelReady;
+    [MonoModIgnore] public new Scene nextScene { get; private set; }
+
+    public new IEnumerator LoadSceneAdditive(string destScene) {
+        tilemapDirty = true;
+        startedOnThisScene = false;
+        nextSceneName = destScene;
+        waitForManualLevelStart = true;
+        if (this.DestroyPersonalPools != null) {
+            this.DestroyPersonalPools();
+        }
+        if (this.UnloadingLevel != null) {
+            this.UnloadingLevel();
+        }
+        string exitingScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        nextScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(destScene);
+
+        yield return new WaitForSeconds(ConfigManager.LoadExtension);
+
+        AsyncOperation loadop = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(destScene, LoadSceneMode.Additive);
+        loadop.allowSceneActivation = true;
+        yield return loadop;
+        bool sceneUnloadOp = UnityEngine.SceneManagement.SceneManager.UnloadScene(exitingScene);
+        RefreshTilemapInfo(destScene);
+        ManualLevelStart();
+        if (this.NextLevelReady != null) {
+            this.NextLevelReady();
+        }
     }
 #endif
 
+#if V1432 || V1575 || V1578
     [MonoModIgnore]
     public extern void orig_SetupSceneRefs(bool refreshTilemapInfo);
 
@@ -144,6 +181,8 @@ class patch_GameManager : GameManager {
             tk2dsa.GetClipByName("Drain").fps = 30 * 0.95f;
         }
     }
+
+#endif
 }
 
 

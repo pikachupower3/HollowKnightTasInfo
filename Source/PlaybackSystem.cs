@@ -20,7 +20,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
         //NOTE: This should be called before either MultiSync or RandomInjection
         //This way if reload is requested, it will be before their next update
-        public static void OnPreRender() {
+        public static void OnPreCull() {
             if (!_initialized) {
                 _initialized = true;
                 _lastUpdateTime = DateTime.UtcNow;

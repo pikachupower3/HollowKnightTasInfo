@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -40,7 +41,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         private static bool lookForTeleporting;
         private static bool wasLoading;
 
-        public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        public static void OnPreCull(GameManager gameManager, StringBuilder infoBuilder) {
             string currentScene = gameManager.sceneName;
             string nextScene = gameManager.nextSceneName;
             GameState gameState = gameManager.gameState;
@@ -116,8 +117,12 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
 
             List<string> result = new();
-            if (!string.IsNullOrEmpty(gameManager.sceneName) && ConfigManager.ShowSceneName) {
-                result.Add(gameManager.sceneName);
+
+            string[] scenes = Enumerable.Range(0, UnityEngine.SceneManagement.SceneManager.sceneCount).Select(i => UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).name).ToArray<string>();
+
+            if (scenes.Length != 0 && ConfigManager.ShowSceneName) {
+                foreach (string scene in scenes.Where(s => !string.IsNullOrEmpty(s)))
+                result.Add(scene);
             }
 
             if (inGameTime > 0 && ConfigManager.ShowTime) {

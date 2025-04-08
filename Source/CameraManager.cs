@@ -1,10 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace Assembly_CSharp.TasInfo.mm.Source {
     internal static class CameraManager {
         private static Vector3? cameraControllerPosition;
 
-        public static void OnPreRender(GameManager gameManager) {
+        public static void OnPreCull(GameManager gameManager) {
             if (gameManager.IsNonGameplayScene()) {
                 return;
             }
@@ -15,7 +15,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
 
             Transform cameraCtrlTransform = cameraCtrl.transform;
 
-            if (ConfigManager.IsCameraZoom || ConfigManager.CameraFollow || ConfigManager.DisableCameraShake) {
+            if (ConfigManager.IsCameraZoom || ConfigManager.CameraFollow || Minidebug.cameraFollow || ConfigManager.DisableCameraShake) {
                 cameraControllerPosition = cameraCtrlTransform.position;
 
                 if (ConfigManager.IsCameraZoom) {
@@ -23,7 +23,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     cameraCtrlTransform.position = new Vector3(position.x, position.y, position.z * ConfigManager.CameraZoom);
                 }
 
-                if (ConfigManager.CameraFollow && gameManager.hero_ctrl is {} heroCtrl) {
+                if ((ConfigManager.CameraFollow || Minidebug.cameraFollow) && gameManager.hero_ctrl is {} heroCtrl) {
                     Vector3 heroPosition = heroCtrl.transform.position;
                     cameraCtrlTransform.position = new Vector3(heroPosition.x, heroPosition.y, cameraCtrlTransform.position.z);
                 }

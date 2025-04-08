@@ -40,6 +40,10 @@ RecordMultiSync = false
 MultiSyncConsolidateGeo = false
 DisableFFDuringLoads = false
 
+# Minidebug
+LoadExtension = 1;
+HideVignette = false;
+
 # 碰撞箱颜色 ARGB 格式，注释或删除则不显示该类 hitbox
 KnightHitbox = 0xFF00FF00
 AttackHitbox = 0xFF00FFFF
@@ -108,11 +112,14 @@ DisableCameraShake = false
         public static bool MultiSyncConsolidateGeo => GetSettingValue<bool>(nameof(MultiSyncConsolidateGeo), false);
         public static bool DisableFFDuringLoads => GetSettingValue(nameof(DisableFFDuringLoads), false);
 
+        public static float LoadExtension => GetSettingValue<float>(nameof(LoadExtension), 1.0f);
+        public static bool HideVignette => GetSettingValue<bool>(nameof(HideVignette), false);
+
         public static string GetHitboxColorValue(HitboxInfo.HitboxType hitboxType) {
             return GetSettingValue($"{hitboxType}Hitbox", string.Empty);
         }
 
-        public static void OnPreRender() {
+        public static void OnPreCull() {
             TryParseConfigFile();
         }
 

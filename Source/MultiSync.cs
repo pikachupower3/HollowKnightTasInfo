@@ -319,7 +319,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
-        public static void OnPreRender() {
+        public static void OnPreCull() {
             if (!_initialized) {
                 _initialized = true;
                 if (ConfigManager.RecordMultiSync) {

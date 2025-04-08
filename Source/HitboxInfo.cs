@@ -37,7 +37,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
-        public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        public static void OnPreCull(GameManager gameManager, StringBuilder infoBuilder) {
             if (gameManager.IsNonGameplayScene() || !ConfigManager.ShowHitbox) {
                 return;
             }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -37,7 +37,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             }
         }
 
-        public static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        public static void OnPreCull(GameManager gameManager, StringBuilder infoBuilder) {
             string customTemplate = ConfigManager.CustomInfoTemplate;
             if (!ConfigManager.ShowCustomInfo || string.IsNullOrEmpty(customTemplate)) {
                 return;

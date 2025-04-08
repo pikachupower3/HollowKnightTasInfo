@@ -10,7 +10,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             lastState = Random.state;
         }
 
-        public static void OnPreRender(StringBuilder infoBuilder) {
+        public static void OnPreCull(StringBuilder infoBuilder) {
             Random.State origState = Random.state;
             Random.state = lastState;
             int increaseTimes = 0;

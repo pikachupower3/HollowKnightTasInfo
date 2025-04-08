@@ -11,17 +11,19 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         // 用于测试
         // ReSharper disable once MemberCanBePrivate.Global
         public static string AdditionalInfo = string.Empty;
+        private static StringBuilder infoBuilder;
 
         // ReSharper disable once UnusedMember.Global
-        // CameraController.OnPreRender
-        public static void OnPreRender() {
+        // CameraController.OnPreCull
+
+        public static void OnPreCull() {
             if (GameManager.instance is not { } gameManager) {
                 return;
             }
 
             AdditionalInfo = string.Empty;
 
-            StringBuilder infoBuilder = new();
+            infoBuilder = new();
 
             try {
                 DesyncChecker.BeforeUpdate();
@@ -30,12 +32,20 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
                     OnInit(gameManager);
                 }
 
-                OnPreRender(gameManager, infoBuilder);
+                OnPreCull(gameManager, infoBuilder);
 
                 DesyncChecker.AfterUpdate(infoBuilder);
             } catch (Exception e) {
                 Debug.LogException(e);
             }
+        }
+
+        public static void OnPreRender() {
+            if (GameManager.instance is not { } gameManager) {
+                return;
+            }
+
+            OnPreRender(gameManager, infoBuilder);
 
             patch_GameManager.TasInfo = infoBuilder.AppendLine(AdditionalInfo).ToString();
         }
@@ -75,23 +85,27 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             MultiSync.Init();
         }
 
-        private static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
+        private static void OnPreCull(GameManager gameManager, StringBuilder infoBuilder) {
             // 放第一位，先更新 settings
-            ConfigManager.OnPreRender();
+            ConfigManager.OnPreCull();
 
             // 放第二位，先处理镜头之后 camera.WorldToScreenPoint 才能获得正确数据
-            CameraManager.OnPreRender(gameManager);
+            Minidebug.OnPreCull(gameManager, infoBuilder);
+            CameraManager.OnPreCull(gameManager);
 
-            HeroInfo.OnPreRender(gameManager, infoBuilder);
-            CustomInfo.OnPreRender(gameManager, infoBuilder);
-            TimeInfo.OnPreRender(gameManager, infoBuilder);
-            EnemyInfo.OnPreRender(gameManager, infoBuilder);
-            HitboxInfo.OnPreRender(gameManager, infoBuilder);
-            RngInfo.OnPreRender(infoBuilder);
-            DiagnosticsLogger.OnPreRender();
-            PlaybackSystem.OnPreRender();
-            MultiSync.OnPreRender();
+            HeroInfo.OnPreCull(gameManager, infoBuilder);
+            CustomInfo.OnPreCull(gameManager, infoBuilder);
+            TimeInfo.OnPreCull(gameManager, infoBuilder);
+            EnemyInfo.OnPreCull(gameManager, infoBuilder);
+            HitboxInfo.OnPreCull(gameManager, infoBuilder);
+            RngInfo.OnPreCull(infoBuilder);
+            DiagnosticsLogger.OnPreCull();
+            PlaybackSystem.OnPreCull();
+            MultiSync.OnPreCull();
 
+        }
+
+        private static void OnPreRender(GameManager gameManager, StringBuilder infoBuilder) {
             // At this point the TasInfo string should have been constructed - now we have the patch_GameManager write out the addr to the special page for the lua script.
             patch_GameManager.WriteTasInfoAddr();
         }
