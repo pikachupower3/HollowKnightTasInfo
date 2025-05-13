@@ -13,7 +13,7 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
         }
 
         private static int activeLoad;
-        public static TransitionPoint[] loadzones;
+        public static TransitionPoint[] loadzones = new TransitionPoint[] {};
 
         private static readonly List<Renderer> _invRenders = new List<Renderer>();
 
@@ -36,8 +36,11 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (Input.GetKeyDown(KeyCode.J)) {
                 ClearWhitescreen();
             }
+            if (Input.GetKeyDown(KeyCode.Alpha6)) {
+                MinidebugTimer.Instance.StartTimer = true;
+            }
 
-            gameManager.hero_ctrl.vignette.enabled = !ConfigManager.HideVignette;
+            if (gameManager.hero_ctrl) gameManager.hero_ctrl.vignette.enabled = !ConfigManager.HideVignette;
 
             infoBuilder.AppendLine($"Loads: {loadzones.Length}");
             infoBuilder.AppendLine($"Active Load: {activeLoad}");
