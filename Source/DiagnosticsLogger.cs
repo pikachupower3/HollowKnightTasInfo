@@ -103,23 +103,6 @@ namespace Assembly_CSharp.TasInfo.mm.Source {
             if (Input.GetKey(KeyCode.RightBracket)) {
                 RandomInjection.RollRngNextScene();
             }
-
-            if (Input.GetKey(KeyCode.Backslash)) {
-                GameManager.instance.FreezeMoment(2);
-            }
-
-            if (Input.GetKeyDown(KeyCode.Semicolon)) {
-                var player = PlayerData.instance;
-                player.gotCharm_6 = true;
-                player.equippedCharm_6 = true;
-                player.equippedCharms.Add(6);
-                player.canOvercharm = true;
-                player.overcharmed = true;
-                if (player.health > 1) {
-                    player.TakeHealth(player.health - 1);
-                }
-                HeroController.instance.proxyFSM.SendEvent("HeroCtrl-HeroDamaged");
-            }
         }
 
         private void RecordData() {
