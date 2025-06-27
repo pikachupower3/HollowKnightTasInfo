@@ -41,8 +41,8 @@ MultiSyncConsolidateGeo = false
 DisableFFDuringLoads = false
 
 # Minidebug
-LoadExtension = 1;
-HideVignette = false;
+LoadExtension = 1
+HideVignette = false
 
 # 碰撞箱颜色 ARGB 格式，注释或删除则不显示该类 hitbox
 KnightHitbox = 0xFF00FF00
